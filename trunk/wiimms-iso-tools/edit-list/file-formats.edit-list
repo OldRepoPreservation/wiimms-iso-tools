@@ -1,0 +1,9 @@
+../src/libwbfs/file-formats.h ;
+../src/libwbfs/file-formats.c ;
+../src/libwbfs/tools.[ch] ;
+../src/lib-std.[ch] ;
+../src/lib-file.[ch] ;
+@+all-source.edit-list
+-y   1 ../src/libwbfs/file-formats.c ;
+-y 920 ../src/libwbfs/file-formats.h ;
+-y   1 ../src/lib-std.c ;
