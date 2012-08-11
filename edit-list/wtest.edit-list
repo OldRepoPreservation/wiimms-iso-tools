@@ -1,0 +1,5 @@
+../src/wtest.c ;
+../work/wtest+.c ;
+../src/lib-std.c ;
+@+all-source.edit-list
+-y 1000 ../src/wtest.c ;
