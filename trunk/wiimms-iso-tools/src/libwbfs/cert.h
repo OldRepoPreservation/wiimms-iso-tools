@@ -322,11 +322,6 @@ typedef enum Base64Mode_t
 
 ///////////////////////////////////////////////////////////////////////////////
 
-extern const char TableEncode64[64];
-extern const char TableDecode64[256];
-
-///////////////////////////////////////////////////////////////////////////////
-
 uint CalcEncode64len
 (
     // returns the needed buflen inclusive 0-Term
@@ -338,6 +333,7 @@ uint CalcEncode64len
 );
 
 //-----------------------------------------------------------------------------
+// [[dclib]]
 
 int Encode64buf
 (
@@ -353,6 +349,7 @@ int Encode64buf
 );
 
 //-----------------------------------------------------------------------------
+// [[dclib]]
 
 char * Encode64
 (

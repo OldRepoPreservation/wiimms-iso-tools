@@ -45,7 +45,7 @@
 #include <errno.h>
 #include <arpa/inet.h>
 
-#include "debug.h"
+#include "dclib/dclib-debug.h"
 #include "libwbfs.h"
 #include "lib-sf.h"
 #include "wbfs-interface.h"

@@ -38,7 +38,7 @@
 #define WIT_PATCH_H 1
 
 #include <stdio.h>
-#include "types.h"
+#include "dclib/dclib-types.h"
 #include "lib-std.h"
 #include "wiidisc.h"
 

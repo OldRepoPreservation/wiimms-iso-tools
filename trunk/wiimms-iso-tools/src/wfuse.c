@@ -44,7 +44,7 @@
 #include <errno.h>
 #include <ctype.h>
 
-#include "debug.h"
+#include "dclib/dclib-debug.h"
 #include "version.h"
 #include "lib-std.h"
 #include "lib-sf.h"
@@ -2050,7 +2050,7 @@ int main ( int argc, char ** argv )
 		SlotInfo_t * si = slot_info + slot;
 		memcpy(si->id6,id_list[slot],6);
 		ccp title = GetTitle(si->id6,(ccp)d->header->dhead+WII_TITLE_OFF);
-		NormalizeFileName(buf,buf+sizeof(buf)-1,title,false)[0] = 0;
+		NormalizeFileName(buf,sizeof(buf)-1,title,false,use_utf8)[0] = 0;
 		si->fname = STRDUP(buf);
 
 		si->atime = main_sf.f.st.st_atime;

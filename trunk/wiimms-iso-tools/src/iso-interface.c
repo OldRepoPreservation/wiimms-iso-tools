@@ -42,7 +42,9 @@
 #include <errno.h>
 #include <ctype.h>
 
-#include "debug.h"
+#include "dclib/dclib-debug.h"
+#include "dclib/dclib-file.h"
+
 #include "iso-interface.h"
 #include "wbfs-interface.h"
 #include "titles.h"
@@ -1489,7 +1491,7 @@ enumError Dump_PATCH
 	return ERR_OK;
     indent = dump_header(f,indent,sf,0,real_path,0);
 
-    enumError err = OpenStreamFile(&sf->f);
+    enumError err = OpenStreamWFile(&sf->f);
     if (err)
 	return err;
 
@@ -1636,8 +1638,8 @@ static s64 PartSelectorFunc
 (
     void		* param,	// NULL or user defined parameter
     ccp			name,		// normalized name of option
-    const CommandTab_t	* cmd_tab,	// valid pointer to command table
-    const CommandTab_t	* cmd,		// valid pointer to found command
+    const KeywordTab_t	* cmd_tab,	// valid pointer to command table
+    const KeywordTab_t	* cmd,		// valid pointer to found command
     char		prefix,		// 0 | '-' | '+' | '='
     s64			result		// current value of result
 )
@@ -1791,7 +1793,7 @@ enumError ScanPartSelector
     ccp err_text_extend		// error message extention
 )
 {
-    static const CommandTab_t tab[] =
+    static const KeywordTab_t tab[] =
     {
 	{ WD_SM_ALLOW_PTYPE,	"DATA",		"D",	WD_PART_DATA },
 	{ WD_SM_ALLOW_PTYPE,	"GAME",		"G",	WD_PART_DATA },
@@ -1823,7 +1825,7 @@ enumError ScanPartSelector
     scan_select.select		= select;
 
     const enumError err
-	= ScanCommandListFunc(arg,tab,PartSelectorFunc,&scan_select,true);
+	= ScanKeywordListFunc(arg,tab,PartSelectorFunc,&scan_select,true);
     if ( err && !scan_select.err_printed )
 	ERROR0(err,"Illegal partition selector%s: %.20s\n",
 			err_text_extend, arg );
@@ -1841,7 +1843,7 @@ int ScanOptPartSelector ( ccp arg )
 
 u32 ScanPartType ( ccp arg, ccp err_text_extend )
 {
-    static const CommandTab_t tab[] =
+    static const KeywordTab_t tab[] =
     {
 	{ WD_PART_DATA,		"DATA",		"D",		0 },
 	{ WD_PART_DATA,		"GAME",		"G",		0 },
@@ -1852,7 +1854,7 @@ u32 ScanPartType ( ccp arg, ccp err_text_extend )
 	{ 0,0,0,0 }
     };
 
-    const CommandTab_t * cmd = ScanCommand(0,arg,tab);
+    const KeywordTab_t * cmd = ScanKeyword(0,arg,tab);
     if (cmd)
 	return cmd->id;
 
@@ -1933,7 +1935,7 @@ int opt_flat = 0;
 
 wd_ipm_t ScanPrefixMode ( ccp arg )
 {
-    static const CommandTab_t tab[] =
+    static const KeywordTab_t tab[] =
     {
 	{ WD_IPM_DEFAULT,	"DEFAULT",	"D",		0 },
 	{ WD_IPM_AUTO,		"AUTO",		"A",		0 },
@@ -1949,7 +1951,7 @@ wd_ipm_t ScanPrefixMode ( ccp arg )
 	{ 0,0,0,0 }
     };
 
-    const CommandTab_t * cmd = ScanCommand(0,arg,tab);
+    const KeywordTab_t * cmd = ScanKeyword(0,arg,tab);
     if (cmd)
 	return cmd->id;
 
@@ -2756,7 +2758,7 @@ enumError CreatePartFST ( WiiFstInfo_t *wfi, ccp dest_path )
     TRACE("CreatePartFST(%p)\n",wfi);
     ASSERT(wfi);
 
-    ResetParamField(&wfi->align_info);
+    ResetWiiParamField(&wfi->align_info);
     wfi->align_info.pft = PFT_ALIGN;
     WiiFstPart_t * part = wfi->part;
     ASSERT(part);
@@ -2772,7 +2774,7 @@ enumError CreatePartFST ( WiiFstInfo_t *wfi, ccp dest_path )
     //----- setup include list
 
     StringCat2E(path_dest,path_end,part->path,FST_INCLUDE_FILE);
-    LoadStringField(&part->include_list,false,path,true);
+    LoadStringField(&part->include_list,false,true,path,true);
 
 
     //----- create all files but WD_ICM_COPY
@@ -2809,7 +2811,7 @@ enumError CreatePartFST ( WiiFstInfo_t *wfi, ccp dest_path )
     //----- write align.list
 
     StringCat2E(path_dest,path_end,part->path,FST_ALIGN_FILE);
-    SaveParamField(&wfi->align_info,path,true);
+    SaveWiiParamField(&wfi->align_info,path,true);
 
     return err;
 }
@@ -2881,7 +2883,7 @@ enumError CreateFileFST ( WiiFstInfo_t *wfi, ccp dest_path, WiiFstFile_t * file 
 			wfi->fw_done_count, wfi->done_count, wfi->total_count,
 			dest);
 	}
-	if (CreatePath(dest))
+	if (CreatePath(dest,false))
 	    wfi->not_created_count++;
 	return ERR_OK;
     }
@@ -2901,7 +2903,7 @@ enumError CreateFileFST ( WiiFstInfo_t *wfi, ccp dest_path, WiiFstFile_t * file 
 	uint off = file->offset4;
 	if (!part->part->is_gc)
 	    off <<= 2;
-	InsertParamField(&wfi->align_info,source,off);
+	InsertWiiParamField(&wfi->align_info,source,off);
     }
 
 
@@ -2976,14 +2978,14 @@ enumError CreateFileFST ( WiiFstInfo_t *wfi, ccp dest_path, WiiFstFile_t * file 
 		file->icm == WD_ICM_DATA ? "write  " : "extract", file->size, dest );
     }
 
-    File_t fo;
-    InitializeFile(&fo);
+    WFile_t fo;
+    InitializeWFile(&fo);
     fo.create_directory = true;
     fo.already_created_mode = ignore_count < 1;
-    enumError err = CreateFile( &fo, dest, IOM_NO_STREAM, wfi->overwrite );
+    enumError err = CreateWFile( &fo, dest, IOM_NO_STREAM, wfi->overwrite );
     if (err)
     {
-	ResetFile(&fo,true);
+	ResetWFile(&fo,true);
 	wfi->not_created_count++;
 	return ERR_OK;
     }
@@ -3058,11 +3060,11 @@ enumError CreateFileFST ( WiiFstInfo_t *wfi, ccp dest_path, WiiFstFile_t * file 
 
     if (wfi->set_time)
     {
-	CloseFile(&fo,0);
-	SetFileTime(&fo,wfi->set_time);
+	CloseWFile(&fo,0);
+	SetWFileTime(&fo,wfi->set_time);
     }
 
-    ResetFile( &fo, err != ERR_OK );
+    ResetWFile( &fo, err != ERR_OK );
 
     return err;    
 }
@@ -3391,7 +3393,7 @@ static enumError ScanSetupDef
 {
     enumError err = ScanSetupFile(part_setup_def,path,FST_SETUP_FILE,silent);
 
-    static const CommandTab_t tab[] =
+    static const KeywordTab_t tab[] =
     {
 	{ WD_DT_GAMECUBE,	"GAMECUBE",	"GC",	0 },
 	{ WD_DT_WII,		"WII",		0,	0 },
@@ -3401,14 +3403,14 @@ static enumError ScanSetupDef
     SetupDef_t *dtype = part_setup_def + PSUP_D_TYPE;
     if (dtype->param)
     {
-	const CommandTab_t * cmd = ScanCommand(0,dtype->param,tab);
+	const KeywordTab_t * cmd = ScanKeyword(0,dtype->param,tab);
 	dtype->value = cmd ? cmd->id : WD_DT_UNKNOWN;
     }
 
     SetupDef_t *itype = part_setup_def + PSUP_I_TYPE;
     if (itype->param)
     {
-	const CommandTab_t * cmd = ScanCommand(0,itype->param,ImageTypeTab);
+	const KeywordTab_t * cmd = ScanKeyword(0,itype->param,ImageTypeTab);
 	itype->value = cmd && !cmd->opt ? cmd->id : OFT_UNKNOWN;
     }
 
@@ -3714,7 +3716,7 @@ static u32 scan_part ( scan_data_t * sd )
 		}
 		if (!found)
 		    sd->total_size += ALIGN32(file->size,4);
-		CopyFileAttribStat(&sd->part->max_fatt,&st,true);
+		MaxFileAttrib(&sd->part->max_fatt,0,&st);
 	    }
 	    // else ignore all other files
 	}
@@ -3742,16 +3744,16 @@ u32 ScanPartFST
     sd.path_part = StringCat2S(sd.path,sizeof(sd.path),base_path,"/");
 
     StringCopyE(sd.path_part,sd.path+sizeof(sd.path),FST_EXCLUDE_FILE);
-    LoadStringField(&part->exclude_list,false,sd.path,true);
+    LoadStringField(&part->exclude_list,false,true,sd.path,true);
     StringCopyE(sd.path_part,sd.path+sizeof(sd.path),FST_INCLUDE_FILE);
-    LoadStringField(&part->include_list,false,sd.path,true);
+    LoadStringField(&part->include_list,false,true,sd.path,true);
 
-    ParamField_t align_info;
-    InitializeParamField(&align_info,PFT_ALIGN);
+    WiiParamField_t align_info;
+    InitializeWiiParamField(&align_info,PFT_ALIGN);
     if (opt_align_files)
     {
 	StringCopyE(sd.path_part,sd.path+sizeof(sd.path),FST_ALIGN_FILE);
-	LoadParamField(&align_info,0,sd.path,true);
+	LoadWiiParamField(&align_info,0,sd.path,true);
 	PRINT("LOAD-ALIGN, N=%u: %s\n",align_info.used,sd.path);
     }
 
@@ -3762,6 +3764,7 @@ u32 ScanPartFST
     file->icm  = WD_ICM_DIRECTORY;
     file->path = STRDUP(sd.path_part);
     noTRACE("DIR:  %s\n",sd.path_dir);
+
 
     //----- scan files
 
@@ -3885,7 +3888,7 @@ u32 ScanPartFST
 		char path[2000];
 		if ( align_info.used && ReduceToPathAndType(path,sizeof(path),file->path) )
 		{
-		    const ParamFieldItem_t *par = FindParamField(&align_info,path);
+		    const WiiParamFieldItem_t *par = FindWiiParamField(&align_info,path);
 		    if ( par && par->num >= WII_SECTOR_SIZE )
 		    {
 			offset4 = ALIGN32(offset4,WII_SECTOR_SIZE4);
@@ -3922,7 +3925,7 @@ u32 ScanPartFST
  #endif
 
     ResetFileIndex(&part->fidx);
-    ResetParamField(&align_info);
+    ResetWiiParamField(&align_info);
 
  #ifdef DEBUG
     {
@@ -4018,9 +4021,9 @@ u64 GenPartFST
     u32 cur_offset4 = ALIGN32(boot_size>>2,good_align);
 
     LoadFile(path, "sys/boot.bin", 0, imi->data,
-		WII_BOOT_SIZE, false, &part->max_fatt, true );
+		WII_BOOT_SIZE, 0, &part->max_fatt, true );
     LoadFile(path, "sys/bi2.bin", 0, imi->data+WII_BOOT_SIZE,
-		WII_BI2_SIZE, false, &part->max_fatt, true );
+		WII_BI2_SIZE, 0, &part->max_fatt, true );
 
     wd_boot_t * boot = imi->data;
     char * title = boot->dhead.disc_title;
@@ -4050,7 +4053,7 @@ u64 GenPartFST
     if ( part->part_type == WD_PART_DATA )
     {
 	LoadFile(path,"disc/header.bin",0,
-			&fst->dhead, sizeof(fst->dhead), true,
+			&fst->dhead, sizeof(fst->dhead), 2,
 			&part->max_fatt, true);
 	PatchDiscHeader(&fst->dhead,part_id,part_name);
 	PatchId(&fst->dhead.disc_id,modify_disc_id,0,6);
@@ -4071,7 +4074,7 @@ u64 GenPartFST
 	else if ( reg == REGION__AUTO || reg == REGION__FILE )
 	{
 	    reg = LoadFile(path,"disc/region.bin",0,
-				&fst->region, sizeof(fst->region), true,
+				&fst->region, sizeof(fst->region), 2,
 				&part->max_fatt, true )
 		? REGION__AUTO : REGION__FILE;
 	}
@@ -4162,7 +4165,7 @@ u64 GenPartFST
 
     if (load_ticket)
 	load_ticket = LoadFile(path,"ticket.bin", 0,
-			    &pc->head->ticket, WII_TICKET_SIZE, false,
+			    &pc->head->ticket, WII_TICKET_SIZE, 0,
 			    &part->max_fatt, true )
 		    == ERR_OK;
     if (!load_ticket)
@@ -4171,7 +4174,7 @@ u64 GenPartFST
 
     if (load_tmd)
 	load_tmd = LoadFile( path, "tmd.bin", 0,
-				pc->tmd, pc->tmd_size, false, &part->max_fatt, true )
+				pc->tmd, pc->tmd_size, 0, &part->max_fatt, true )
 		 == ERR_OK;
     if (!load_tmd)
 	tmd_setup(pc->tmd,pc->tmd_size,&fst->dhead.disc_id);
@@ -4185,7 +4188,7 @@ u64 GenPartFST
     }
     else
 	LoadFile(path,"cert.bin", 0, pc->cert, pc->cert_size,
-			false, &part->max_fatt, true );
+			0, &part->max_fatt, true );
 
     if ( part->part_type == WD_PART_DATA )
     {
@@ -4194,6 +4197,7 @@ u64 GenPartFST
 	if (opt_ios_valid)
 	    pc->tmd->sys_version = hton64(opt_ios);
     }
+
 
     //----- setup
 
@@ -4235,7 +4239,7 @@ u64 GenPartFST
 
     //----- terminate
 
-    MaxFileAttrib(&sf->f.fatt,&part->max_fatt);
+    MaxFileAttrib(&sf->f.fatt,&part->max_fatt,0);
     ResetSetup(part_setup_def);
     return pc->data_size;
 }
@@ -4758,7 +4762,7 @@ enumError ReadPartGroupFST ( SuperFile_t * sf, WiiFstPart_t * part,
 		noTRACE("IMT_FILE: %x %x -> %zx (%s)\n",
 			skip_count, max_copy, dest-src, imi->info );
 		ASSERT(imi->data);
-		LoadFile(imi->data,0,skip_count,dest,max_copy,false,0,false);
+		LoadFile(imi->data,0,skip_count,dest,max_copy,0,0,false);
 		break;
 
 	    case IMT_PART_FILES:
@@ -4788,7 +4792,7 @@ enumError ReadPartGroupFST ( SuperFile_t * sf, WiiFstPart_t * part,
 			    if ( load_size > max-loff )
 				 load_size = max-loff;
 			    noPRINT("LOAD %9llx %p [%s]\n",loff,ldest,file->path);
-			    LoadFile(part->path,file->path,skip,ldest,load_size,false,0,false);
+			    LoadFile(part->path,file->path,skip,ldest,load_size,0,0,false);
 			    ldest += load_size;
 			    loff  += load_size;
 			}
@@ -5784,7 +5788,7 @@ enumError Skeletonize
     SetupIOD(&fo,oft,oft);
     fo.f.create_directory = local_mkdir;
 
-    GenImageFileName(&fo.f,fname,0,oft);
+    GenImageWFileName(&fo.f,fname,0,oft);
     SubstFileNameSF(&fo,fi,0);
 
     if ( testmode || verbose >= 0 )
@@ -5796,7 +5800,7 @@ enumError Skeletonize
 
     if (!testmode)
     {
-	err = CreateFile( &fo.f, 0, oft_info[oft].iom, true );
+	err = CreateWFile( &fo.f, 0, oft_info[oft].iom, true );
 	if (!err)
 	{
 	    err = SetupWriteSF(&fo,oft);

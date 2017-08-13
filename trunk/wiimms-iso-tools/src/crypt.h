@@ -41,8 +41,8 @@
 #define SHA1 WIT_SHA1
 
 // random functions
-void RandomFill ( void * buf, size_t size );
-#define RANDOM_FILL RandomFill
+void MyRandomFill ( void * buf, size_t size );
+#define RANDOM_FILL MyRandomFill
 
 #endif // WIT_CRYPT_H
 

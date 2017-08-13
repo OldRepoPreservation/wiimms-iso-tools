@@ -9,6 +9,7 @@
 ../src/iso-interface.[ch] ;
 ../src/wbfs-interface.[ch] ;
 ../src/*.{c,h} ;
+../dclib/*.{c,h,inc} ;
 ../src/&/*.{c,h,s,S} ;
 ../setup/*.{c,h} ;
 ../work/*.{c,h,s,S} ;

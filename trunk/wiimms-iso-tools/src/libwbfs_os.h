@@ -44,8 +44,8 @@
 #include <time.h>
 
 // project dependent includes
-#include "types.h"
-#include "debug.h"
+#include "dclib/dclib-types.h"
+#include "dclib/dclib-debug.h"
 #include "lib-error.h"
 #include "crypt.h"
 

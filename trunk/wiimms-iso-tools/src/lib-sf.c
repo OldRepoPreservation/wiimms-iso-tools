@@ -44,7 +44,7 @@
 #include <dirent.h>
 #include <errno.h>
 
-#include "debug.h"
+#include "dclib/dclib-debug.h"
 #include "libwbfs.h"
 #include "lib-sf.h"
 #include "wbfs-interface.h"
@@ -60,7 +60,7 @@ void InitializeSF ( SuperFile_t * sf )
 {
     ASSERT(sf);
     memset(sf,0,sizeof(*sf));
-    InitializeFile(&sf->f);
+    InitializeWFile(&sf->f);
     InitializeMemMap(&sf->modified_list);
     ResetSF(sf,0);
 }
@@ -149,7 +149,7 @@ static enumError CloseHelperSF
     }
 
     if (remove)
-	err = CloseFile(&sf->f,true);
+	err = CloseWFile(&sf->f,true);
     else
     {
 	if ( sf->f.is_writing && sf->min_file_size )
@@ -189,12 +189,12 @@ static enumError CloseHelperSF
 	}
 
 	if ( err != ERR_OK )
-	    CloseFile(&sf->f,true);
+	    CloseWFile(&sf->f,true);
 	else
 	{
-	    err = CloseFile(&sf->f,false);
+	    err = CloseWFile(&sf->f,false);
 	    if (set_time_ref)
-		SetFileTime(&sf->f,set_time_ref);
+		SetWFileTime(&sf->f,set_time_ref);
 	}
     }
 
@@ -242,7 +242,7 @@ enumError ResetSF ( SuperFile_t * sf, FileAttrib_t * set_time_ref )
 
     // free dynamic memory
     enumError err = CloseHelperSF(sf,set_time_ref,false,0);
-    ResetFile(&sf->f,false);
+    ResetWFile(&sf->f,false);
     sf->indent = NormalizeIndent(sf->indent);
 
     // reset data
@@ -565,9 +565,9 @@ enumError OpenSF
     const bool disable_errors = sf->f.disable_errors;
     sf->f.disable_errors = true;
     if (open_modify)
-	OpenFileModify(&sf->f,fname,IOM_IS_IMAGE);
+	OpenWFileModify(&sf->f,fname,IOM_IS_IMAGE);
     else
-	OpenFile(&sf->f,fname,IOM_IS_IMAGE);
+	OpenWFile(&sf->f,fname,IOM_IS_IMAGE);
     sf->f.disable_errors = disable_errors;
 
     DefineCachedAreaISO(&sf->f,true);
@@ -612,7 +612,7 @@ enumError CreateSF
     TRACE("#S# CreateSF(%p,%s,%x,%x,%x)\n",sf,fname,oft,iomode,overwrite);
 
     CheckDirectSF(sf,oft);
-    const enumError err = CreateFile(&sf->f,fname,iomode,overwrite);
+    const enumError err = CreateWFile(&sf->f,fname,iomode,overwrite);
     return err ? err : SetupWriteSF(sf,oft);
 }
 
@@ -1054,7 +1054,7 @@ void SubstFileNameSF
 	= SubstFileNameBuf(fname,sizeof(fname),fi,dest_arg,fo->f.fname,fo->iod.oft);
     if ( conv_count > 0 )
 	fo->f.create_directory = true;
-    SetFileName(&fo->f,fname,true);
+    SetWFileName(&fo->f,fname,true);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -2193,8 +2193,8 @@ void PrintProgressSF ( u64 p_done, u64 p_total, void * param )
 	const u32 eta = elapsed * (u64)max_rate / rate - elapsed;
 
 	char buf1[50], buf2[50];
-	ccp time1 = PrintMSec(buf1,sizeof(buf1),elapsed,sf->show_msec);
-	ccp time2 = PrintMSec(buf2,sizeof(buf2),eta,false);
+	ccp time1 = PrintTimerMSec(buf1,sizeof(buf1),elapsed,sf->show_msec?3:0);
+	ccp time2 = PrintTimerMSec(buf2,sizeof(buf2),eta,0);
 
 	noPRINT("PROGRESS: now=%7u perc=%3u ela=%6u eta=%6u [%s,%s]\n",
 		now, percent, elapsed, eta, time1, time2 );
@@ -2273,7 +2273,7 @@ void PrintSummarySF ( SuperFile_t * sf )
     {
 	const u32 elapsed = GetTimerMSec() - sf->progress_start_time;
 	char timbuf[50];
-	ccp tim = PrintMSec(timbuf,sizeof(timbuf),elapsed,sf->show_msec);
+	ccp tim = PrintTimerMSec(timbuf,sizeof(timbuf),elapsed,sf->show_msec?3:0);
 
 	char ratebuf[50] = {0};
 	u64 total = sf->f.bytes_read + sf->f.bytes_written;
@@ -2386,7 +2386,7 @@ void PrintProgressChunkSF
 ///////////////                     AnalyzeFT()                 ///////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-enumFileType AnalyzeFT ( File_t * f )
+enumFileType AnalyzeFT ( WFile_t * f )
 {
     ASSERT(f);
 
@@ -2452,12 +2452,12 @@ enumFileType AnalyzeFT ( File_t * f )
 	sf.f.disable_errors = true;
 	if (f->is_writing)
 	{
-	    if (OpenFileModify(&sf.f,fname,IOM_IS_WBFS_PART))
+	    if (OpenWFileModify(&sf.f,fname,IOM_IS_WBFS_PART))
 		return f->ftype;
 	}
 	else
 	{
-	    if (OpenFile(&sf.f,fname,IOM_IS_WBFS_PART))
+	    if (OpenWFile(&sf.f,fname,IOM_IS_WBFS_PART))
 		return f->ftype;
 	}
 
@@ -2517,7 +2517,7 @@ enumFileType AnalyzeFT ( File_t * f )
 	    sf.f.slot = wdisk.slot;
 	    CopyFileAttribDiscInfo(&sf.f.fatt,&wdisk);
 
-	    ResetFile(f,false);
+	    ResetWFile(f,false);
 	    memcpy(f,&sf.f,sizeof(*f));
 	    SetPatchFileID(f,id6,6);
 	    memset(&sf.f,0,sizeof(sf.f));
@@ -2747,7 +2747,7 @@ enumFileType AnalyzeFT ( File_t * f )
 		ft |= FT_ID_GC_ISO | FT_A_ISO | FT_A_GC_ISO;
 		SetPatchFileID(f,data_ptr,6);
 		if ( f->st.st_size < ISO_SPLIT_DETECT_SIZE )
-		    SetupSplitFile(f,OFT_PLAIN,0);
+		    SetupSplitWFile(f,OFT_PLAIN,0);
 		break;
 
 	    case FT_ID_WII_ISO:
@@ -2757,7 +2757,7 @@ enumFileType AnalyzeFT ( File_t * f )
 
 		SetPatchFileID(f,data_ptr,6);
 		if ( f->st.st_size < ISO_SPLIT_DETECT_SIZE )
-		    SetupSplitFile(f,OFT_PLAIN,0);
+		    SetupSplitWFile(f,OFT_PLAIN,0);
 		break;
 
 	    case FT_ID_HEAD_BIN:
@@ -2980,7 +2980,7 @@ enumFileType AnalyzeMemFT ( const void * preload_buf, off_t file_size )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-enumError XPrintErrorFT ( XPARM File_t * f, enumFileType err_mask )
+enumError XPrintErrorFT ( XPARM WFile_t * f, enumFileType err_mask )
 {
     ASSERT(f);
     if ( f->ftype == FT_UNKNOWN )
@@ -3247,12 +3247,12 @@ enumError CopyImage
 	CopyPatchWbfsId(fo->wbfs_id6,fi->wbfs_id6);
 
     CheckDirectSF(fo,oft);
-    enumError err = CreateFile( &fo->f, 0, oft_info[oft].iom, overwrite );
+    enumError err = CreateWFile( &fo->f, 0, oft_info[oft].iom, overwrite );
     if ( err || SIGINT_level > 1 )
 	goto abort;
 
     if (opt_split)
-	SetupSplitFile(&fo->f,oft,opt_split_size);
+	SetupSplitWFile(&fo->f,oft,opt_split_size);
 
     err = SetupWriteSF(fo,oft);
     if ( err || SIGINT_level > 1 )
@@ -3395,7 +3395,7 @@ enumError ExtractImage
     wfi.link_image	= copy_image && !opt_no_link;
 
     enumError err = CreateFST(&wfi,dest_dir);
-    ResetParamField(&wfi.align_info);
+    ResetWiiParamField(&wfi.align_info);
 
     if ( !err && wfi.not_created_count )
     {	
@@ -3823,7 +3823,7 @@ enumError CopyWBFSDisc ( SuperFile_t * in, SuperFile_t * out )
 ///////////////////////////////////////////////////////////////////////////////
 
 enumError AppendF
-	( File_t * in, SuperFile_t * out, off_t in_off, size_t count )
+	( WFile_t * in, SuperFile_t * out, off_t in_off, size_t count )
 {
     ASSERT(in);
     ASSERT(out);
@@ -3851,7 +3851,7 @@ enumError AppendF
 ///////////////////////////////////////////////////////////////////////////////
 
 enumError AppendSparseF
-	( File_t * in, SuperFile_t * out, off_t in_off, size_t count )
+	( WFile_t * in, SuperFile_t * out, off_t in_off, size_t count )
 {
     ASSERT(in);
     ASSERT(out);

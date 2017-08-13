@@ -51,7 +51,7 @@
 #include <ctype.h>
 #include <errno.h>
 
-#include "debug.h"
+#include "dclib/dclib-debug.h"
 #include "version.h"
 #include "wiidisc.h"
 #include "lib-sf.h"
@@ -83,10 +83,10 @@ static void help_exit( bool xmode )
     {
 	int cmd;
 	for ( cmd = 0; cmd < CMD__N; cmd++ )
-	    PrintHelpCmd(&InfoUI,stdout,0,cmd,0,0);
+	    PrintHelpCmd(&InfoUI_wwt,stdout,0,cmd,0,0,URI_HOME);
     }
     else
-	PrintHelpCmd(&InfoUI,stdout,0,0,"HELP",0);
+	PrintHelpCmd(&InfoUI_wwt,stdout,0,0,"HELP",0,URI_HOME);
 
     exit(ERR_OK);
 }
@@ -156,7 +156,7 @@ void print_title ( FILE * f )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-static const CommandTab_t * current_command = 0;
+static const KeywordTab_t * current_command = 0;
 
 static void hint_exit ( enumError stat )
 {
@@ -252,6 +252,8 @@ enumError cmd_test()
 }
 
 //
+///////////////////////////////////////////////////////////////////////////////
+///////////////			command FIND			///////////////
 ///////////////////////////////////////////////////////////////////////////////
 
 enumError cmd_find()
@@ -397,6 +399,8 @@ enumError cmd_find()
 
 //
 ///////////////////////////////////////////////////////////////////////////////
+///////////////			command SPACE			///////////////
+///////////////////////////////////////////////////////////////////////////////
 
 enumError cmd_space()
 {
@@ -421,8 +425,10 @@ enumError cmd_space()
 
     const bool print_header = !OptionUsed[OPT_NO_HEADER];
     if (print_header)
-	printf("\n   size    used used%%   free   discs    file   (sizes in MiB)\n"
-		 "--------------------------------------------------------------\n");
+	printf(	"\n%s   size    used used%%   free   discs    file   (sizes in MiB)%s\n"
+		"%s--------------------------------------------------------------%s\n",
+		colout->heading, colout->reset,
+		colout->heading, colout->reset );
 
     WBFS_t wbfs;
     InitializeWBFS(&wbfs);
@@ -448,6 +454,8 @@ enumError cmd_space()
 
 //
 ///////////////////////////////////////////////////////////////////////////////
+///////////////			command ANALYZE			///////////////
+///////////////////////////////////////////////////////////////////////////////
 
 enumError cmd_analyze()
 {
@@ -464,8 +472,8 @@ enumError cmd_analyze()
 	    CreatePartitionInfo(param->arg,PS_PARAM);
     }
 
-    File_t F;
-    InitializeFile(&F);
+    WFile_t F;
+    InitializeWFile(&F);
 
     PartitionInfo_t * info;
     for ( info = first_partition_info; info; info = info->next )
@@ -473,7 +481,7 @@ enumError cmd_analyze()
 	if ( !info->path || !*info->path )
 	    continue;
 
-	const enumError stat = OpenFile(&F,info->path,IOM_IS_WBFS_PART);
+	const enumError stat = OpenWFile(&F,info->path,IOM_IS_WBFS_PART);
 	if (stat)
 	    continue;
 
@@ -483,11 +491,13 @@ enumError cmd_analyze()
 	PrintAnalyzeWBFS(stdout,0,&awd,long_count);
     }
     putchar('\n');
-    ResetFile(&F,0);
+    ResetWFile(&F,0);
     return ERR_OK;
 }
 
 //
+///////////////////////////////////////////////////////////////////////////////
+///////////////			command DUMP			///////////////
 ///////////////////////////////////////////////////////////////////////////////
 
 enumError cmd_dump()
@@ -527,6 +537,8 @@ enumError cmd_dump()
 }
 
 //
+///////////////////////////////////////////////////////////////////////////////
+///////////////			command ID6			///////////////
 ///////////////////////////////////////////////////////////////////////////////
 
 enumError cmd_id6()
@@ -578,6 +590,8 @@ enumError cmd_id6()
 }
 
 //
+///////////////////////////////////////////////////////////////////////////////
+///////////////			fragment helpers		///////////////
 ///////////////////////////////////////////////////////////////////////////////
 
 typedef struct fragment_summary_t
@@ -799,19 +813,21 @@ static int print_list_mixed()
 
 //
 ///////////////////////////////////////////////////////////////////////////////
+///////////////			command LIST			///////////////
+///////////////////////////////////////////////////////////////////////////////
 
 enumError cmd_list ( int long_level )
 {
     if ( long_level > 0 )
     {
-	RegisterOptionByIndex(&InfoUI,OPT_LONG,long_level,false);
+	RegisterOptionByIndex(&InfoUI_wwt,OPT_LONG,long_level,false);
 	long_count += long_level;
     }
 
     const bool print_fragments = OptionUsed[OPT_FRAGMENTS] != 0;
     if ( print_fragments && !long_count )
     {
-	RegisterOptionByIndex(&InfoUI,OPT_LONG,1,false);
+	RegisterOptionByIndex(&InfoUI_wwt,OPT_LONG,1,false);
 	long_count++;
     }
 
@@ -1003,7 +1019,7 @@ enumError cmd_list_a()
 
 enumError cmd_list_m()
 {
-    RegisterOptionByIndex(&InfoUI,OPT_MIXED,1,false);
+    RegisterOptionByIndex(&InfoUI_wwt,OPT_MIXED,1,false);
     opt_all++;
     return cmd_list(2);
 }
@@ -1012,7 +1028,7 @@ enumError cmd_list_m()
 
 enumError cmd_list_u()
 {
-    RegisterOptionByIndex(&InfoUI,OPT_UNIQUE,1,false);
+    RegisterOptionByIndex(&InfoUI_wwt,OPT_UNIQUE,1,false);
     opt_all++;
     return cmd_list(2);
 }
@@ -1021,11 +1037,13 @@ enumError cmd_list_u()
 
 enumError cmd_list_f()
 {
-    RegisterOptionByIndex(&InfoUI,OPT_FRAGMENTS,1,false);
+    RegisterOptionByIndex(&InfoUI_wwt,OPT_FRAGMENTS,1,false);
     return cmd_list(0);
 }
 
 //
+///////////////////////////////////////////////////////////////////////////////
+///////////////			command FORMAT			///////////////
 ///////////////////////////////////////////////////////////////////////////////
 
 enumError cmd_format()
@@ -1085,9 +1103,9 @@ enumError cmd_format()
 		if (verbose>=0)
 		    printf("CREATE FILE %s [%d GiB]\n", param->arg, size_gib );
 
-		File_t f;
-		InitializeFile(&f);
-		enumError err = CreateFile(&f,param->arg,IOM_NO_STREAM,1);
+		WFile_t f;
+		InitializeWFile(&f);
+		enumError err = CreateWFile(&f,param->arg,IOM_NO_STREAM,1);
 		if (err)
 		{
 		    error_count++;
@@ -1095,16 +1113,16 @@ enumError cmd_format()
 		}
 
 		if (opt_split)
-		    SetupSplitFile(&f,OFT_WBFS,opt_split_size);
+		    SetupSplitWFile(&f,OFT_WBFS,opt_split_size);
 
 		if (SetSizeF(&f,opt_size))
 		{
-		    ClearFile(&f,true);
+		    ClearWFile(&f,true);
 		    error_count++;
 		    continue;
 		}
 
-		ClearFile(&f,false);
+		ClearWFile(&f,false);
 		create_count++;
 	    }
 	}
@@ -1129,9 +1147,9 @@ enumError cmd_format()
 	    if ( testmode || verbose >= 0 )
 		printf("ANALYZE %s %s\n", filetype, param->arg );
 
-	    File_t f;
-	    InitializeFile(&f);
-	    if ( OpenFile(&f,param->arg,IOM_IS_WBFS_PART) == ERR_OK )
+	    WFile_t f;
+	    InitializeWFile(&f);
+	    if ( OpenWFile(&f,param->arg,IOM_IS_WBFS_PART) == ERR_OK )
 	    {
 		AWData_t awd;
 		AnalyzeWBFS(&awd,&f);
@@ -1140,7 +1158,7 @@ enumError cmd_format()
 		    hss = awd.rec[0].hd_sector_size;
 		    wss = awd.rec[0].wbfs_sector_size;
 		}
-		ResetFile(&f,0);
+		ResetWFile(&f,0);
 	    }
 	}
 
@@ -1231,6 +1249,8 @@ enumError cmd_format()
 
 //
 ///////////////////////////////////////////////////////////////////////////////
+///////////////			command RECOVER			///////////////
+///////////////////////////////////////////////////////////////////////////////
 
 enumError cmd_recover()
 {
@@ -1279,6 +1299,8 @@ enumError cmd_recover()
 }
 
 //
+///////////////////////////////////////////////////////////////////////////////
+///////////////			command CHECK			///////////////
 ///////////////////////////////////////////////////////////////////////////////
 
 enumError cmd_check()
@@ -1350,18 +1372,22 @@ enumError cmd_check()
 
 //
 ///////////////////////////////////////////////////////////////////////////////
+///////////////			command REPAIR			///////////////
+///////////////////////////////////////////////////////////////////////////////
 
 enumError cmd_repair()
 {
     if (!OptionUsed[OPT_REPAIR])
     {
-	RegisterOptionByIndex(&InfoUI,OPT_REPAIR,1,false);
+	RegisterOptionByIndex(&InfoUI_wwt,OPT_REPAIR,1,false);
 	repair_mode = REPAIR_DEFAULT;
     }
     return cmd_check();
 }
 
 //
+///////////////////////////////////////////////////////////////////////////////
+///////////////			command EDIT			///////////////
 ///////////////////////////////////////////////////////////////////////////////
 
 enumError cmd_edit()
@@ -1425,8 +1451,8 @@ enumError cmd_edit()
     enum { DO_RM = -5, DO_ACT, DO_INV, DO_FREE, DO_USED };
     ASSERT( DO_USED < 0 );
 
-    CommandTab_t * ctab = CALLOC(6+wbfs.used_discs,sizeof(*ctab));
-    CommandTab_t * cptr = ctab;
+    KeywordTab_t * ctab = CALLOC(6+wbfs.used_discs,sizeof(*ctab));
+    KeywordTab_t * cptr = ctab;
 
     cptr->id	= DO_RM;
     cptr->name1	= "RM";
@@ -1469,14 +1495,14 @@ enumError cmd_edit()
     for ( param = first_param; param; param = param->next )
     {
 	char * arg = param->arg;
-	char cmd_buf[COMMAND_NAME_MAX];
+	char cmd_buf[KEYWORD_NAME_MAX];
 	char *dest = cmd_buf;
 	char *end  = cmd_buf + sizeof(cmd_buf) - 1;
 	while ( *arg && *arg != '=' && dest < end )
 	    *dest++ = *arg++;
 	*dest = 0;
 	int cstat;
-	const CommandTab_t * cptr = ScanCommand(&cstat,cmd_buf,ctab);
+	const KeywordTab_t * cptr = ScanKeyword(&cstat,cmd_buf,ctab);
 
 	if (cstat)
 	{
@@ -1618,6 +1644,8 @@ enumError cmd_edit()
 
 //
 ///////////////////////////////////////////////////////////////////////////////
+///////////////			command PHANTOM			///////////////
+///////////////////////////////////////////////////////////////////////////////
 
 enumError cmd_phantom()
 {
@@ -1725,10 +1753,10 @@ enumError cmd_phantom()
 		printf(" - %sGENERATE %d..%d PHANTOMS with %d..%d MiB\n",
 			testmode ? "WOULD " : "", n1, n2, s1, s2 );
 
-	    u32 n = n1 + Random32(n2-n1+1);
+	    u32 n = n1 + MyRandom(n2-n1+1);
 	    while ( !abort && n-- > 0 )
 	    {
-		u32 size = s1 + Random32(s2-s1+1);
+		u32 size = s1 + MyRandom(s2-s1+1);
 		u32 n_sect = (u64)size * MiB /WII_SECTOR_SIZE;
 
 		int idx;
@@ -1788,6 +1816,8 @@ enumError cmd_phantom()
 }
 
 //
+///////////////////////////////////////////////////////////////////////////////
+///////////////			command TRUNCATE		///////////////
 ///////////////////////////////////////////////////////////////////////////////
 
 enumError cmd_truncate()
@@ -1861,6 +1891,8 @@ enumError cmd_truncate()
 }
 
 //
+///////////////////////////////////////////////////////////////////////////////
+///////////////			command ADD			///////////////
 ///////////////////////////////////////////////////////////////////////////////
 
 static ID_DB_t sync_list;
@@ -1974,11 +2006,13 @@ static void count_jobs ( WBFS_t * w, Iterator_t * it, bool count_it )
 		break;
 	    }
 	}
+
 	PRINT_IF(wfound,"FOUND: mtime= %llu/src %c %llu/found\n",
 		(u64)item->mtime,
 		item->mtime < wfound->mtime
 			? '<' : item->mtime > wfound->mtime ? '>' : '=',
 		(u64)wfound->mtime );
+
 	if ( !wfound || it->overwrite
 		|| it->newer && ( !item->mtime || item->mtime > wfound->mtime ))
 	{
@@ -2155,7 +2189,7 @@ enumError cmd_add()
 	return ERROR0(ERR_MISSING_PARAM,"Missing files to add!\n");
 
     if ( OptionUsed[OPT_SYNC] )
-	RegisterOptionByIndex(&InfoUI,OPT_UPDATE,1,false);
+	RegisterOptionByIndex(&InfoUI_wwt,OPT_UPDATE,1,false);
 
     encoding |= ENCODE_F_ENCRYPT; // hint: encrypten and any signing wanted
 
@@ -2374,10 +2408,12 @@ enumError cmd_add()
 
 //
 ///////////////////////////////////////////////////////////////////////////////
+///////////////		commands UPDATE, NEW, SYNC		///////////////
+///////////////////////////////////////////////////////////////////////////////
 
 enumError cmd_update()
 {
-    RegisterOptionByIndex(&InfoUI,OPT_UPDATE,1,false);
+    RegisterOptionByIndex(&InfoUI_wwt,OPT_UPDATE,1,false);
     return cmd_add();
 }
 
@@ -2386,21 +2422,22 @@ enumError cmd_update()
 
 enumError cmd_new()
 {
-    RegisterOptionByIndex(&InfoUI,OPT_NEWER,1,false);
-    RegisterOptionByIndex(&InfoUI,OPT_UPDATE,1,false);
+    RegisterOptionByIndex(&InfoUI_wwt,OPT_NEWER,1,false);
+    RegisterOptionByIndex(&InfoUI_wwt,OPT_UPDATE,1,false);
+    return cmd_add();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+enumError cmd_sync()
+{
+    RegisterOptionByIndex(&InfoUI_wwt,OPT_SYNC,1,false);
     return cmd_add();
 }
 
 //
 ///////////////////////////////////////////////////////////////////////////////
-
-enumError cmd_sync()
-{
-    RegisterOptionByIndex(&InfoUI,OPT_SYNC,1,false);
-    return cmd_add();
-}
-
-//
+///////////////			command DUP			///////////////
 ///////////////////////////////////////////////////////////////////////////////
 
 enumError cmd_dup()
@@ -2588,6 +2625,8 @@ enumError cmd_dup()
 
 //
 ///////////////////////////////////////////////////////////////////////////////
+///////////////			command EXTRACT			///////////////
+///////////////////////////////////////////////////////////////////////////////
 
 enumError cmd_extract()
 {
@@ -2727,7 +2766,7 @@ enumError cmd_extract()
 						    id6, (ccp)dhead->disc_title,
 						    info->path, 0, dpath, oft );
 		    noTRACE("|%s|%s|\n",dpath,fbuf);
-		    SetFileName(&fo.f,fbuf,true);
+		    SetWFileName(&fo.f,fbuf,true);
 		    fo.f.create_directory = conv_count || opt_mkdir;
 		    //fo.src = wbfs.sf;
 
@@ -2888,6 +2927,8 @@ enumError cmd_extract()
 }
 
 //
+///////////////////////////////////////////////////////////////////////////////
+///////////////			command SCRUB			///////////////
 ///////////////////////////////////////////////////////////////////////////////
 
 enumError cmd_scrub()
@@ -3086,6 +3127,8 @@ enumError cmd_scrub()
 
 //
 ///////////////////////////////////////////////////////////////////////////////
+///////////////			command REMOVE			///////////////
+///////////////////////////////////////////////////////////////////////////////
 
 enumError cmd_remove()
 {
@@ -3233,6 +3276,8 @@ enumError cmd_remove()
 }
 
 //
+///////////////////////////////////////////////////////////////////////////////
+///////////////			command RENAME			///////////////
 ///////////////////////////////////////////////////////////////////////////////
 
 enumError cmd_rename ( bool rename_id )
@@ -3389,6 +3434,8 @@ enumError cmd_rename ( bool rename_id )
 
 //
 ///////////////////////////////////////////////////////////////////////////////
+///////////////			command TOUCH			///////////////
+///////////////////////////////////////////////////////////////////////////////
 
 enumError cmd_touch()
 {
@@ -3512,6 +3559,8 @@ enumError cmd_touch()
 }
 
 //
+///////////////////////////////////////////////////////////////////////////////
+///////////////			command VERIFY			///////////////
 ///////////////////////////////////////////////////////////////////////////////
 
 enumError cmd_verify()
@@ -3699,6 +3748,8 @@ enumError cmd_verify()
 
 //
 ///////////////////////////////////////////////////////////////////////////////
+///////////////			command SKELETONIZE		///////////////
+///////////////////////////////////////////////////////////////////////////////
 
 enumError cmd_skeletonize()
 {
@@ -3794,6 +3845,8 @@ enumError cmd_skeletonize()
 }
 
 //
+///////////////////////////////////////////////////////////////////////////////
+///////////////			command FILETYPE		///////////////
 ///////////////////////////////////////////////////////////////////////////////
 
 enumError cmd_filetype()
@@ -3895,7 +3948,7 @@ enumError CheckOptions ( int argc, char ** argv, bool is_env )
       if ( opt_stat == -1 )
 	break;
 
-      RegisterOptionByName(&InfoUI,opt_stat,1,is_env);
+      RegisterOptionByName(&InfoUI_wwt,opt_stat,1,is_env);
 
       switch ((enumGetOpt)opt_stat)
       {
@@ -3912,6 +3965,9 @@ enumError CheckOptions ( int argc, char ** argv, bool is_env )
 	case GO_SCAN_PROGRESS:	scan_progress++; break;
 	case GO_LOGGING:	logging++; break;
 	case GO_ESC:		err += ScanEscapeChar(optarg) < 0; break;
+	case GO_COLOR:		err += ScanOptColorize(0,optarg,0); break;
+	case GO_COLOR_256:	opt_colorize = COLMD_256_COLORS; break;
+	case GO_NO_COLOR:	opt_colorize = -1; break;
 	case GO_IO:		ScanIOMode(optarg); break;
 	case GO_DIRECT:		opt_direct++; break;
 
@@ -4127,9 +4183,10 @@ enumError CheckOptions ( int argc, char ** argv, bool is_env )
     NormalizeIdOptions();
     if ( OptionUsed[OPT_NO_HEADER] )
 	opt_show_mode &= ~SHOW_F_HEAD;
+    SetupColors();
 
  #ifdef DEBUG
-    DumpUsedOptions(&InfoUI,TRACE_FILE,11);
+    DumpUsedOptions(&InfoUI_wwt,TRACE_FILE,11);
  #endif
 
     if ( verbose > 3 && !is_env )
@@ -4163,17 +4220,39 @@ enumError CheckCommand ( int argc, char ** argv )
     }
 
     int cmd_stat;
-    const CommandTab_t * cmd_ct = ScanCommand(&cmd_stat,argv[optind],CommandTab);
+    ccp arg = argv[optind];
+    const KeywordTab_t * cmd_ct = ScanKeyword(&cmd_stat,arg,CommandTab);
+    if ( !cmd_ct && cmd_stat < 2 && toupper((int)*arg) == 'C' )
+    {
+	if ( arg[1] == '-' )
+	{
+	    arg += 2;
+	    cmd_ct = ScanKeyword(&cmd_stat,arg,CommandTab);
+	}
+	else
+	{
+	    int cmd_stat2;
+	    cmd_ct = ScanKeyword(&cmd_stat2,arg+1,CommandTab);
+	}
+
+	if (cmd_ct)
+	{
+	    if (!opt_colorize)
+		opt_colorize = COLMD_ON;
+	    SetupColors();
+	}
+    }
+
     if (!cmd_ct)
     {
-	PrintCommandError(CommandTab,argv[optind],cmd_stat,0);
+	PrintKeywordError(CommandTab,argv[optind],cmd_stat,0,0);
 	hint_exit(ERR_SYNTAX);
     }
 
     TRACE("COMMAND FOUND: #%lld = %s\n",(u64)cmd_ct->id,cmd_ct->name1);
     current_command = cmd_ct;
 
-    enumError err = VerifySpecificOptions(&InfoUI,cmd_ct);
+    enumError err = VerifySpecificOptions(&InfoUI_wwt,cmd_ct);
     if (err)
 	hint_exit(err);
 
@@ -4186,7 +4265,8 @@ enumError CheckCommand ( int argc, char ** argv )
     switch ((enumCommands)cmd_ct->id)
     {
 	case CMD_VERSION:	version_exit();
-	case CMD_HELP:		PrintHelp(&InfoUI,stdout,0,"HELP",0); break;
+	case CMD_HELP:		PrintHelp(&InfoUI_wwt,stdout,0,"HELP",0,URI_HOME,
+					first_param ? first_param->arg : 0 ); break;
 	case CMD_INFO:		err = cmd_info(); break;
 	case CMD_TEST:		err = cmd_test(); break;
 	case CMD_ERROR:		err = cmd_error(); break;
@@ -4243,7 +4323,7 @@ enumError CheckCommand ( int argc, char ** argv )
 	    help_exit(false);
     }
 
-    return PrintErrorStat(err,cmd_ct->name1);
+    return PrintErrorStatWit(err,cmd_ct->name1);
 }
 
 //

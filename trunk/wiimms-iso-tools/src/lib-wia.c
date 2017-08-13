@@ -36,7 +36,7 @@
 
 #define _GNU_SOURCE 1
 
-#include "debug.h"
+#include "dclib/dclib-debug.h"
 #include "iso-interface.h"
 #include "lib-bzip2.h"
 #include "lib-lzma.h"
@@ -1073,7 +1073,7 @@ enumError SetupReadWIA
     //----- check file size
 
     if ( sf->f.st.st_size < fhead->wia_file_size )
-	SetupSplitFile(&sf->f,OFT_WIA,0);
+	SetupSplitWFile(&sf->f,OFT_WIA,0);
 
     if ( sf->f.st.st_size != fhead->wia_file_size )
 	return ERROR0(ERR_WIA_INVALID,
@@ -1157,7 +1157,7 @@ enumError SetupReadWIA
 	    wia->memory_usage += CalcMemoryUsageBZIP2(disc->compr_level,false);
 	    PRINT("DISABLE CACHE & OPEN STREAM\n");
 	    ClearCache(&sf->f);
-	    OpenStreamFile(&sf->f);
+	    OpenStreamWFile(&sf->f);
 	 #endif
 	    break;
 
@@ -2368,7 +2368,7 @@ enumError SetupWriteWIA
 	    wia->memory_usage += CalcMemoryUsageBZIP2(opt_compr_level,true);
 	 #endif
 	    PRINT("OPEN STREAM\n");
-	    OpenStreamFile(&sf->f);
+	    OpenStreamWFile(&sf->f);
 	    break;
 
 	case WD_COMPR_LZMA:

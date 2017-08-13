@@ -1,22 +1,20 @@
 
 /***************************************************************************
- *                    __            __ _ ___________                       *
- *                    \ \          / /| |____   ____|                      *
- *                     \ \        / / | |    | |                           *
- *                      \ \  /\  / /  | |    | |                           *
- *                       \ \/  \/ /   | |    | |                           *
- *                        \  /\  /    | |    | |                           *
- *                         \/  \/     |_|    |_|                           *
  *                                                                         *
- *                           Wiimms ISO Tools                              *
- *                         http://wit.wiimm.de/                            *
+ *                     _____     ____                                      *
+ *                    |  __ \   / __ \   _     _ _____                     *
+ *                    | |  \ \ / /  \_\ | |   | |  _  \                    *
+ *                    | |   \ \| |      | |   | | |_| |                    *
+ *                    | |   | || |      | |   | |  ___/                    *
+ *                    | |   / /| |   __ | |   | |  _  \                    *
+ *                    | |__/ / \ \__/ / | |___| | |_| |                    *
+ *                    |_____/   \____/  |_____|_|_____/                    *
+ *                                                                         *
+ *                       Wiimms source code library                        *
  *                                                                         *
  ***************************************************************************
  *                                                                         *
- *   This file is part of the WIT project.                                 *
- *   Visit http://wit.wiimm.de/ for project details and sources.           *
- *                                                                         *
- *   Copyright (c) 2009-2017 by Dirk Clemens <wiimm@wiimm.de>              *
+ *        Copyright (c) 2012-2017 by Dirk Clemens <wiimm@wiimm.de>         *
  *                                                                         *
  ***************************************************************************
  *                                                                         *
@@ -34,6 +32,11 @@
  *                                                                         *
  ***************************************************************************/
 
+#ifndef DCLIB_GEN_UI_H
+#define DCLIB_GEN_UI_H
+
+#include "dclib-basics.h"
+
 //
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////			  text controls			///////////////
@@ -43,6 +46,10 @@
 //	\2 : the following text is only for the web site
 //	\3 : the following text is for both, built in help and web site
 //	\4 : replace by '<' for html tags on web site
+
+// Only for tools and commands:
+//	\f : Text before: short help for lists
+//	     Text behind: extended help for tool/command help
 
 //
 ///////////////////////////////////////////////////////////////////////////////
@@ -75,13 +82,15 @@ typedef enum enumType
 	F_OPT_OPTPARAM	=  0x100000,  // option accepts a optional parameter
 	F_SEPARATOR	=  0x200000,  // separator element
 	F_SUPERSEDE	=  0x400000,  // supersedes all other commands and options
+	F_IGNORE	=  0x800000,  // ignore on command 'HELP OPTIONS'
 
 	F_OPT_XPARAM	=  F_OPT_PARAM | F_OPT_OPTPARAM,
 
 
 	//----- global flags
 
-	F_HIDDEN	= 0x1000000,  // option is hidden from help
+	F_HIDDEN	= 0x1000000,  // tool, command or option is hidden from help
+	F_DEPRECATED	= 0x2000000,  // command or option is depreacted
 
 
 	//----- option combinations
@@ -147,100 +156,7 @@ typedef struct info_t
 
 //
 ///////////////////////////////////////////////////////////////////////////////
-///////////////			some helper macros		///////////////
+///////////////				END			///////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-#define TEXT_WWT_OPT_REPAIR \
-	"This option defines how to repair WBFS errors." \
-	" The parameter is a comma separated list of the following keywords," \
-	" case is ignored:" \
-	" @NONE, FBT, INODES, STANDARD," \
-	" RM-INVALID, RM-OVERLAP, RM-FREE, RM-EMPTY, RM-ALL, ALL@." \
-	"\n " \
-	" All keywords can be prefixed by '+' to enable that option," \
-	" by a '-' to disable it or" \
-	" by a '=' to enable that option and disable all others."
-
-#define TEXT_OPT_CHUNK_MODE(def) \
-	"Defines an operation mode for {--chunk-size} and {--max-chunks}." \
-	" Allowed keywords are @'ANY'@ to allow any values," \
-	" @'32K'@ to force chunk sizes with a multiple of 32 KiB," \
-	" @'POW2'@ to force chunk sizes >=32K and with a power of 2" \
-	" or @'ISO'@ for ISO images (more restrictive as @'POW2'@," \
-	" best for USB loaders)." \
-	" The case of the keyword is ignored." \
-	" The default key is @'" def "'@." \
-	"\n " \
-	" @--chm@ is a shortcut for @--chunk-mode@."
-
-#define TEXT_EXTRACT_LONG \
-	"Print a summary line while extracting files." \
-	" If set at least twice, print a status line for each extracted files."
-
-#define TEXT_FILE_FILTER \
-	" This option can be used multiple times to extend the rule list." \
-	" Rules beginning with a '+' or a '-' are allow or deny rules rules." \
-	" Rules beginning with a ':' are macros for predefined rule sets." \
-	"\1\n " \
-	" See http://wit.wiimm.de/info/file-filter.html" \
-	" for more details about file filters."
-
-///////////////////////////////////////////////////////////////////////////////
-
-#define TEXT_DIFF_QUIET \
-	"Be quiet and print only error messages and failure messages on mismatch." \
-	" The comparison is aborted at the first mismatch for each source image." \
-	" If set twice print nothing and report the diff result only as exit status" \
-	" and the complete comparison is aborted at the first mismatch at all."
-
-#define TEXT_DIFF_VERBOSE \
-	"The default is to print only differ messages." \
-	" If set success messages and summaries are printed too." \
-	" If set at least twice, a progress counter is printed too."
-
-#define TEXT_DIFF_FILE_LIMIT \
-	"This option is only used if comparing discs on file level." \
-	" If not set or set to null, then all files will be compared." \
-	" If set to a value greater than comparison is aborted for" \
-	" the current source image if the entered number of files differ." \
-	" This option is ignored in quiet mode."
-
-#define TEXT_DIFF_LIMIT \
-	"If not set, the comparison of the current file is aborted" \
-	" if a mismatch is found." \
-	" If set, the comparison is aborted after @'limit'@ mismatches." \
-	" To compare the whole file use the special value @0@." \
-	" This option is ignored in quiet mode."
-
-#define TEXT_DIFF_LONG \
-	"If set, a status line with the offset is printed for each found mismatch." \
-	" If set twice, an additional hex dump of the first bytes is printed." \
-	" If set 3 or 4 times, the limit is set to 10 or unlimited" \
-	" if option {--limit} is not already set." \
-	" This option is ignored in quiet mode."
-
-#define TEXT_DIFF_BLOCK_SIZE \
-	"If a mismatch is found in raw or disc mode then the comparison" \
-	" is continued with the next block. This option sets the block size." \
-	" The default value is @32K@ (Wii sector size)." \
-	" This option is ignored in quiet mode."
-
-//
-///////////////////////////////////////////////////////////////////////////////
-///////////////			the info table			///////////////
-///////////////////////////////////////////////////////////////////////////////
-
-info_t info_tab[] =
-{
-    #include "tab-wit.inc"
-    #include "tab-wwt.inc"
-    #include "tab-wdf.inc"
-    #include "tab-wfuse.inc"
-
-    { T_END, 0,0,0,0 }
-};
-
-//
-///////////////////////////////////////////////////////////////////////////////
-///////////////			    E N D			///////////////
-///////////////////////////////////////////////////////////////////////////////
+#endif // DCLIB_GEN_UI_H

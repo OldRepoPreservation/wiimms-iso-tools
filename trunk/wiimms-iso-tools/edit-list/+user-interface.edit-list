@@ -1,4 +1,3 @@
-../src/ui/tab-ui.c ;
 ../src/ui/tab-wit.inc ;
 ../src/ui/tab-wwt.inc ;
 ../src/ui/tab-wdf.inc ;

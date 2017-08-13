@@ -72,6 +72,7 @@ typedef enumError (*FlushFunc)
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////			struct IOData_t			///////////////
 ///////////////////////////////////////////////////////////////////////////////
+// [[IOData_t]]
 
 typedef struct IOData_t
 {
@@ -99,7 +100,7 @@ typedef struct SuperFile_t
 {
 	// parameters, set by user
 
-	File_t f;			// file handling struct
+	WFile_t f;			// file handling struct
 	int  indent;			// indent of progress and summary
 	bool show_progress;		// true: show progress info
 	bool show_summary;		// true: show summary statistics
@@ -443,9 +444,9 @@ void PrintProgressChunkSF
 );
 
 // find file type
-enumFileType AnalyzeFT ( File_t * f );
+enumFileType AnalyzeFT ( WFile_t * f );
 enumFileType AnalyzeMemFT ( const void * buf_hd_sect_size, off_t file_size );
-enumError XPrintErrorFT ( XPARM File_t * f, enumFileType err_mask );
+enumError XPrintErrorFT ( XPARM WFile_t * f, enumFileType err_mask );
 
 ccp GetNameFT ( enumFileType ftype, int ignore );
 ccp GetContainerNameFT ( enumFileType ftype, ccp answer_if_no_container );
@@ -515,8 +516,8 @@ enumError CopyRawData2
 enumError CopyWDF	( SuperFile_t * in, SuperFile_t * out );
 enumError CopyWIA	( SuperFile_t * in, SuperFile_t * out );
 enumError CopyWBFSDisc	( SuperFile_t * in, SuperFile_t * out );
-enumError AppendF	(      File_t * in, SuperFile_t * out, off_t in_off, size_t count );
-enumError AppendSparseF	(      File_t * in, SuperFile_t * out, off_t in_off, size_t count );
+enumError AppendF	(      WFile_t * in, SuperFile_t * out, off_t in_off, size_t count );
+enumError AppendSparseF	(      WFile_t * in, SuperFile_t * out, off_t in_off, size_t count );
 enumError AppendSF	( SuperFile_t * in, SuperFile_t * out, off_t in_off, size_t count );
 enumError AppendZeroSF	( SuperFile_t * out, off_t count );
 
@@ -524,6 +525,7 @@ enumError AppendZeroSF	( SuperFile_t * out, off_t count );
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////			    diff			///////////////
 ///////////////////////////////////////////////////////////////////////////////
+// [[Diff_t]]
 
 struct WritePatch_t;
 

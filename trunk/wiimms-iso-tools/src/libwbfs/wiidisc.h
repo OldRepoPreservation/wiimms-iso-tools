@@ -938,6 +938,17 @@ char * wd_print_id
 );
 
 //-----------------------------------------------------------------------------
+// returns a pointer to a printable ID with colors, teminated with 0
+
+char * wd_print_id_col
+(
+    const void		* id,		// NULL | EMPTY | ID to convert
+    size_t		id_len,		// len of 'id'
+    const void		* ref_id,	// reference ID
+    const ColorSet_t	*colset		// NULL or color set
+);
+
+//-----------------------------------------------------------------------------
 // rename ID and title of a ISO header
 
 int wd_rename

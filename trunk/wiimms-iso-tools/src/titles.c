@@ -43,7 +43,7 @@
 #include <ctype.h>
 #include <dirent.h>
 
-#include "debug.h"
+#include "dclib/dclib-debug.h"
 #include "lib-std.h"
 #include "wbfs-interface.h"
 #include "titles.h"
@@ -581,13 +581,13 @@ static void CheckExcludePath
     DASSERT(sf);
     DASSERT(sf_id6);
 
-    File_t f;
-    InitializeFile(&f);
-    if (OpenFile(&f,path,IOM_NO_STREAM))
+    WFile_t f;
+    InitializeWFile(&f);
+    if (OpenWFile(&f,path,IOM_NO_STREAM))
 	return;
 
     AnalyzeFT(&f);
-    ClearFile(&f,false);
+    ClearWFile(&f,false);
 
     if ( *f.id6_src )
     {

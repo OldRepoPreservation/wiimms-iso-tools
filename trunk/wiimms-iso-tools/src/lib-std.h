@@ -45,8 +45,11 @@
 #include <stdio.h>
 #include <time.h>
 
-#include "types.h"
-#include "system.h"
+#include "dclib/dclib-types.h"
+#include "dclib/dclib-basics.h"
+#include "dclib/dclib-file.h"
+#include "dclib/dclib-system.h"
+
 #include "lib-error.h"
 #include "libwbfs/file-formats.h"
 
@@ -75,6 +78,10 @@
  #define SUPPORT_DIRECT 2	// 0=off, 1:on, 2=on+logs
 #else
  #define SUPPORT_DIRECT 0
+#endif
+
+#ifndef OPT_OLD_NEW
+ #define OPT_OLD_NEW 1
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -121,17 +128,20 @@ typedef enum enumRevID
 #define M1(a) ( (typeof(a))~0 )
 #define IS_M1(a) ( (a) == (typeof(a))~0 )
 
+///////////////////////////////////////////////////////////////////////////////
+
+typedef char id6_t[7];
+
 //
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////                       Setup                     ///////////////
 ///////////////////////////////////////////////////////////////////////////////
 
 void SetupLib ( int argc, char ** argv, ccp p_progname, enumProgID prid );
+void SetupColors();
 void CloseAll();
 
 typedef enumError (*check_opt_func) ( int argc, char ** argv, bool mode );
-
-enumError CheckEnvOptions ( ccp varname, check_opt_func );
 
 //
 ///////////////////////////////////////////////////////////////////////////////
@@ -150,19 +160,19 @@ enumError CheckEnvOptions ( ccp varname, check_opt_func );
  #define XERROR0 func,file,line,0
  #define XERROR1 func,file,line,errno
 
- #define ResetFile(f,r)		XResetFile	(__FUNCTION__,__FILE__,__LINE__,f,r)
- #define ClearFile(f,r)		XClearFile	(__FUNCTION__,__FILE__,__LINE__,f,r)
- #define CloseFile(f,r)		XCloseFile	(__FUNCTION__,__FILE__,__LINE__,f,r)
- #define SetFileTime(f,s)	XSetFileTime	(__FUNCTION__,__FILE__,__LINE__,f,s)
- #define OpenFile(f,n,i)	XOpenFile	(__FUNCTION__,__FILE__,__LINE__,f,n,i)
- #define OpenFileModify(f,n,i)	XOpenFileModify	(__FUNCTION__,__FILE__,__LINE__,f,n,i)
+ #define ResetWFile(f,r)	XResetWFile	(__FUNCTION__,__FILE__,__LINE__,f,r)
+ #define ClearWFile(f,r)	XClearWFile	(__FUNCTION__,__FILE__,__LINE__,f,r)
+ #define CloseWFile(f,r)	XCloseWFile	(__FUNCTION__,__FILE__,__LINE__,f,r)
+ #define SetWFileTime(f,s)	XSetWFileTime	(__FUNCTION__,__FILE__,__LINE__,f,s)
+ #define OpenWFile(f,n,i)	XOpenWFile	(__FUNCTION__,__FILE__,__LINE__,f,n,i)
+ #define OpenWFileModify(f,n,i)	XOpenWFileModify	(__FUNCTION__,__FILE__,__LINE__,f,n,i)
  #define CheckCreated(f,d,e)	XCheckCreated	(__FUNCTION__,__FILE__,__LINE__,f,d,e)
- #define CreateFile(f,n,i,o)	XCreateFile	(__FUNCTION__,__FILE__,__LINE__,f,n,i,o)
- #define OpenStreamFile(f)	XOpenStreamFile	(__FUNCTION__,__FILE__,__LINE__,f)
+ #define CreateWFile(f,n,i,o)	XCreateWFile	(__FUNCTION__,__FILE__,__LINE__,f,n,i,o)
+ #define OpenStreamWFile(f)	XOpenStreamWFile	(__FUNCTION__,__FILE__,__LINE__,f)
  #define SetupAutoSplit(f,m)	XSetupAutoSplit	(__FUNCTION__,__FILE__,__LINE__,f,m)
- #define SetupSplitFile(f,m,s)	XSetupSplitFile	(__FUNCTION__,__FILE__,__LINE__,f,m,s)
- #define CreateSplitFile(f,i)	XCreateSplitFile(__FUNCTION__,__FILE__,__LINE__,f,i)
- #define FindSplitFile(f,i,o)	XFindSplitFile	(__FUNCTION__,__FILE__,__LINE__,f,i,o)
+ #define SetupSplitWFile(f,m,s)	XSetupSplitWFile	(__FUNCTION__,__FILE__,__LINE__,f,m,s)
+ #define CreateSplitWFile(f,i)	XCreateSplitWFile(__FUNCTION__,__FILE__,__LINE__,f,i)
+ #define FindSplitWFile(f,i,o)	XFindSplitWFile	(__FUNCTION__,__FILE__,__LINE__,f,i,o)
  #define PrintErrorFT(f,m)	XPrintErrorFT	(__FUNCTION__,__FILE__,__LINE__,f,m)
  #define AnalyzeWH(f,h,p)	XAnalyzeWH	(__FUNCTION__,__FILE__,__LINE__,f,h,p)
  #define TellF(f)		XTellF		(__FUNCTION__,__FILE__,__LINE__,f)
@@ -175,9 +185,9 @@ enumError CheckEnvOptions ( ccp varname, check_opt_func );
  #define WriteAtF(f,o,b,c)	XWriteAtF	(__FUNCTION__,__FILE__,__LINE__,f,o,b,c)
  #define WriteZeroAtF(f,o,c)	XWriteZeroAtF	(__FUNCTION__,__FILE__,__LINE__,f,o,c)
  #define ZeroAtF(f,o,c)		XZeroAtF	(__FUNCTION__,__FILE__,__LINE__,f,o,c)
- #define CreateOutFile(o,f,m,w)	XCreateOutFile	(__FUNCTION__,__FILE__,__LINE__,o,f,m,w)
- #define CloseOutFile(o,s)	XCloseOutFile	(__FUNCTION__,__FILE__,__LINE__,o,s)
- #define RemoveOutFile(o)	XRemoveOutFile	(__FUNCTION__,__FILE__,__LINE__,o)
+ #define CreateOutWFile(o,f,m,w)XCreateOutWFile	(__FUNCTION__,__FILE__,__LINE__,o,f,m,w)
+ #define CloseOutWFile(o,s)	XCloseOutWFile	(__FUNCTION__,__FILE__,__LINE__,o,s)
+ #define RemoveOutWFile(o)	XRemoveOutWFile	(__FUNCTION__,__FILE__,__LINE__,o)
 
  #define WriteDirectAtF(f,o,b,c,d,s) \
 				XWriteDirectAtF	(__FUNCTION__,__FILE__,__LINE__,f,o,b,c,d,s)
@@ -189,19 +199,19 @@ enumError CheckEnvOptions ( ccp varname, check_opt_func );
  #define XERROR0 __FUNCTION__,__FILE__,__LINE__,0
  #define XERROR1 __FUNCTION__,__FILE__,__LINE__,errno
 
- #define ResetFile(f,r)		XResetFile	(f,r)
- #define ClearFile(f,r)		XClearFile	(f,r)
- #define CloseFile(f,r)		XCloseFile	(f,r)
- #define SetFileTime(f,s)	XSetFileTime	(f,s)
- #define OpenFile(f,n,i)	XOpenFile	(f,n,i)
- #define OpenFileModify(f,n,i)	XOpenFileModify	(f,n,i)
+ #define ResetWFile(f,r)	XResetWFile	(f,r)
+ #define ClearWFile(f,r)	XClearWFile	(f,r)
+ #define CloseWFile(f,r)	XCloseWFile	(f,r)
+ #define SetWFileTime(f,s)	XSetWFileTime	(f,s)
+ #define OpenWFile(f,n,i)	XOpenWFile	(f,n,i)
+ #define OpenWFileModify(f,n,i)	XOpenWFileModify	(f,n,i)
  #define CheckCreated(f,d,e)	XCheckCreated	(f,d,e)
- #define CreateFile(f,n,i,o)	XCreateFile	(f,n,i,o)
- #define OpenStreamFile(f)	XOpenStreamFile	(f)
+ #define CreateWFile(f,n,i,o)	XCreateWFile	(f,n,i,o)
+ #define OpenStreamWFile(f)	XOpenStreamWFile	(f)
  #define SetupAutoSplit(f,m)	XSetupAutoSplit	(f,m)
- #define SetupSplitFile(f,m,s)	XSetupSplitFile	(f,m,s)
- #define CreateSplitFile(f,i)	XCreateSplitFile(f,i)
- #define FindSplitFile(f,i,o)	XFindSplitFile	(f,i,o)
+ #define SetupSplitWFile(f,m,s)	XSetupSplitWFile	(f,m,s)
+ #define CreateSplitWFile(f,i)	XCreateSplitWFile(f,i)
+ #define FindSplitWFile(f,i,o)	XFindSplitWFile	(f,i,o)
  #define PrintErrorFT(f,m)	XPrintErrorFT	(f,m)
  #define AnalyzeWH(f,h,p)	XAnalyzeWH	(f,h,p)
  #define TellF(f)		XTellF		(f)
@@ -214,32 +224,13 @@ enumError CheckEnvOptions ( ccp varname, check_opt_func );
  #define WriteAtF(f,o,b,c)	XWriteAtF	(f,o,b,c)
  #define WriteZeroAtF(f,o,c)	XWriteZeroAtF	(f,o,c)
  #define ZeroAtF(f,o,c)		XZeroAtF	(f,o,c)
- #define CreateOutFile(o,f,m,w)	XCreateOutFile	(o,f,m,w)
- #define CloseOutFile(o,s)	XCloseOutFile	(o,s)
- #define RemoveOutFile(o)	XRemoveOutFile	(o)
+ #define CreateOutWFile(o,f,m,w)XCreateOutWFile	(o,f,m,w)
+ #define CloseOutWFile(o,s)	XCloseOutWFile	(o,s)
+ #define RemoveOutWFile(o)	XRemoveOutWFile	(o)
 
  #define WriteDirectAtF(f,o,b,c,d,s) XWriteDirectAtF(f,o,b,c,d,s)
 
 #endif
-
-//
-///////////////////////////////////////////////////////////////////////////////
-///////////////			terminal cap			///////////////
-///////////////////////////////////////////////////////////////////////////////
-
-extern u32 opt_width;
-int ScanOptWidth ( ccp source ); // returns '1' on error, '0' else
-
-int GetTermWidth ( int default_value, int min_value );
-int GetTermWidthFD ( int fd, int default_value, int min_value );
-
-//
-///////////////////////////////////////////////////////////////////////////////
-///////////////			    timer			///////////////
-///////////////////////////////////////////////////////////////////////////////
-
-u32 GetTimerMSec();
-ccp PrintMSec ( char * buf, int bufsize, u32 msec, bool PrintMSec );
 
 //
 ///////////////////////////////////////////////////////////////////////////////
@@ -248,73 +239,6 @@ ccp PrintMSec ( char * buf, int bufsize, u32 msec, bool PrintMSec );
 
 u32 GetHSS ( int fd, u32 default_value );
 off_t GetBlockDevSize ( int fd );
-
-//
-///////////////////////////////////////////////////////////////////////////////
-///////////////			commands			///////////////
-///////////////////////////////////////////////////////////////////////////////
-
-#define COMMAND_NAME_MAX 100
-
-typedef struct CommandTab_t
-{
-    s64			id;		// id
-    ccp			name1;		// first name
-    ccp			name2;		// NULL or second name
-    s64			opt;		// option
-
-} CommandTab_t;
-
-typedef s64 (*CommandCallbackFunc)
-(
-    void		* param,	// NULL or user defined parameter
-    ccp			name,		// normalized name of option
-    const CommandTab_t	* cmd_tab,	// valid pointer to command table
-    const CommandTab_t	* cmd,		// valid pointer to found command
-    char		prefix,		// 0 | '-' | '+' | '='
-    s64			result		// current value of result
-);
-
-const CommandTab_t * ScanCommand
-(
-    int			* res_abbrev,	// NULL or pointer to result 'abbrev_count'
-    ccp			arg,		// argument to scan
-    const CommandTab_t	* cmd_tab	// valid pointer to command table
-);
-
-s64 ScanCommandList
-(
-    ccp			arg,		// argument to scan
-    const CommandTab_t	* cmd_tab,	// valid pointer to command table
-    CommandCallbackFunc	func,		// NULL or calculation function
-    bool		allow_prefix,	// allow '-' | '+' | '=' as prefix
-    u32			max_number,	// allow numbers < 'max_number' (0=disabled)
-    s64			result		// start value for result
-);
-
-enumError ScanCommandListFunc
-(
-    ccp			arg,		// argument to scan
-    const CommandTab_t	* cmd_tab,	// valid pointer to command table
-    CommandCallbackFunc	func,		// calculation function
-    void		* param,	// used define parameter for 'func'
-    bool		allow_prefix	// allow '-' | '+' | '=' as prefix
-);
-
-s64 ScanCommandListMask
-(
-    ccp			arg,		// argument to scan
-    const CommandTab_t	* cmd_tab	// valid pointer to command table
-);
-
-void PrintCommandError
-(
-    const CommandTab_t	* cmd_tab,	// NULL or pointer to command table
-    ccp			cmd_arg,	// analyzed command
-    int			cmd_stat,	// status of ScanCommand()
-    ccp			object		// NULL or object for error messages
-					//	default= 'command'
-);
 
 //
 ///////////////////////////////////////////////////////////////////////////////
@@ -379,6 +303,7 @@ typedef enum attribOFT // OFT attributes
 } attribOFT;
 
 //-----------------------------------------------------------------------------
+// [[OFT_info_t]]
 
 typedef struct OFT_info_t
 {
@@ -397,7 +322,7 @@ typedef struct OFT_info_t
 //-----------------------------------------------------------------------------
 
 extern const OFT_info_t oft_info[OFT__N+1];
-extern const CommandTab_t ImageTypeTab[];
+extern const KeywordTab_t ImageTypeTab[];
 extern enumOFT output_file_type;
 extern int opt_truncate;
 
@@ -405,106 +330,9 @@ enumOFT CalcOFT ( enumOFT force, ccp fname_dest, ccp fname_src, enumOFT def );
 
 //
 ///////////////////////////////////////////////////////////////////////////////
-///////////////			Memory Map			///////////////
-///////////////////////////////////////////////////////////////////////////////
-
-typedef struct MemMapItem_t
-{
-    u64		off;		// offset
-    u64		size;		// size
-    u8		overlap;	// system info: item overlaps other items
-    u8		index;		// user defined index
-    char	info[62];	// user defined info text
-
-} MemMapItem_t;
-
-//-----------------------------------------------------------------------------
-
-typedef struct MemMap_t
-{
-    MemMapItem_t ** field;	// pointer to the item field
-    uint	used;		// number of used titles in the item field
-    uint	size;		// number of allocated pointer in 'field'
-    u64		begin;		// first address
-
-} MemMap_t;
-
-//-----------------------------------------------------------------------------
-//	Memory maps allow duplicate entries.
-//	The off+size pair is used as key.
-//	The entries are sorted by off and size (small values first).
-//-----------------------------------------------------------------------------
-
-void InitializeMemMap ( MemMap_t * mm );
-void ResetMemMap ( MemMap_t * mm );
-
-MemMapItem_t * FindMemMap
-(
-    // returns NULL or the pointer to the one! matched key (={off,size})
-
-    MemMap_t		* mm,
-    off_t		off,
-    off_t		size
-);
-
-uint InsertMemMapIndex
-(
-    // returns the index of the new item
-
-    MemMap_t		* mm,		// mem map pointer
-    off_t		off,		// offset of area
-    off_t		size		// size of area
-);
-
-MemMapItem_t * InsertMemMap
-(
-    // returns a pointer to a new item (never NULL)
-
-    MemMap_t		* mm,		// mem map pointer
-    off_t		off,		// offset of area
-    off_t		size		// size of area
-);
-
-MemMapItem_t * InsertMemMapTie
-(
-    // returns a pointer to a new or existing item (never NULL)
-
-    MemMap_t		* mm,		// mem map pointer
-    off_t		off,		// offset of area
-    off_t		size		// size of area
-);
-
-void InsertMemMapWrapper
-(
-    void		* param,	// user defined parameter
-    u64			offset,		// offset of object
-    u64			size,		// size of object
-    ccp			info		// info about object
-);
-
-struct wd_disc_t;
-void InsertDiscMemMap
-(
-    MemMap_t		* mm,		// valid memory map pointer
-    struct wd_disc_t	* disc		// valid disc pointer
-);
-
-// Remove all entires with key. Return number of delete entries
-//uint RemoveMemMap ( MemMap_t * mm, off_t off, off_t size );
-
-// Return the index of the found or next item
-uint FindMemMapHelper ( MemMap_t * mm, off_t off, off_t size );
-
-// Calculate overlaps. Return number of items with overlap.
-uint CalcOverlapMemMap ( MemMap_t * mm );
-
-// Print out memory map
-void PrintMemMap ( MemMap_t * mm, FILE * f, int indent, ccp info_head );
-
-//
-///////////////////////////////////////////////////////////////////////////////
 ///////////////			   File Map			///////////////
 ///////////////////////////////////////////////////////////////////////////////
+// [[FileMapItem_t]]
 
 typedef struct FileMapItem_t
 {
@@ -515,6 +343,7 @@ typedef struct FileMapItem_t
 } FileMapItem_t;
 
 //-----------------------------------------------------------------------------
+// [[FileMap_t]]
 
 typedef struct FileMap_t
 {
@@ -606,6 +435,7 @@ typedef enum enumFileType
 } enumFileType;
 
 //-----------------------------------------------------------------------------
+// [[FileCache_t]]
 
 typedef struct FileCache_t
 {
@@ -618,63 +448,25 @@ typedef struct FileCache_t
 
 //-----------------------------------------------------------------------------
 
-typedef struct FileAttrib_t
-{
-	// attributes of a (virtual) file
-
-	off_t  size;	// size
-	time_t itime;	// itime
-	time_t mtime;	// mtime
-	time_t ctime;	// ctime
-	time_t atime;	// atime
-
-} FileAttrib_t;
-
-//---------------
-
 struct WDiscInfo_t;
-struct wbfs_inode_info_t;
-
-FileAttrib_t * NormalizeFileAttrib
-(
-    FileAttrib_t	* fa		// valid attribute
-);
-
-FileAttrib_t * MaxFileAttrib
-(
-    FileAttrib_t	* dest,		// valid source and destination attribute
-    const FileAttrib_t	* src		// NULL or second source attribute
-);
-
-FileAttrib_t * CopyFileAttrib
-(
-    FileAttrib_t	* dest,		// valid destination attribute
-    const FileAttrib_t	* src		// valid source attribute
-);
-
-FileAttrib_t * CopyFileAttribStat
-(
-    FileAttrib_t	* dest,		// valid destination attribute
-    const struct stat	* src,		// NULL or source
-    bool		maximize	// true store max values to 'dest'
-);
-
 FileAttrib_t * CopyFileAttribDiscInfo
 		( FileAttrib_t * dest, const struct WDiscInfo_t * src );
+
+struct wbfs_inode_info_t;
 FileAttrib_t * CopyFileAttribInode
 		( FileAttrib_t * dest, const struct wbfs_inode_info_t * src, off_t size );
 
 
 //-----------------------------------------------------------------------------
-// [[File_t]]
+// [[WFile_t]]
 
-typedef struct File_t
+typedef struct WFile_t
 {
     //--- file handles and status
 
     int		fd;			// file handle, -1=invalid
     FILE	* fp;			// stream handle, 0=invalid
-    struct stat st;			// file status after OpenFile()
+    struct stat st;			// file status after OpenWFile()
     int		active_open_flags;	// active open flags.
     enumFileType ftype;			// the type of the file
     bool	is_reading;		// file opened in read mode;
@@ -701,7 +493,7 @@ typedef struct File_t
 					// outname is without path/directory
 					// or extension
 
-    //--- options set by user, not reset by ResetFile()
+    //--- options set by user, not reset by ResetWFile()
 
     int		open_flags;		// proposed open flags; if zero then ignore
     bool	disable_errors;		// don't print error messages
@@ -748,7 +540,7 @@ typedef struct File_t
 
     //--- split file support
 
-    struct File_t **split_f;		// list with pointers to the split files
+    struct WFile_t **split_f;		// list with pointers to the split files
     int		split_used;		// number of used split files in 'split_f'
     off_t	split_off;		// if split file: offset in combined file
     off_t	split_filesize;		// if split file: size of split file
@@ -772,59 +564,59 @@ typedef struct File_t
     u64		bytes_read;		// number of bytes read
     u64		bytes_written;		// number of bytes written
 
-} File_t;
+} WFile_t;
 
 //-----------------------------------------------------------------------------
 
 // initialize, reset and close files
-void InitializeFile	( File_t * f );
-enumError XResetFile	( XPARM File_t * f, bool remove_file );
-enumError XClearFile	( XPARM File_t * f, bool remove_file );
-enumError XCloseFile	( XPARM File_t * f, bool remove_file );
-enumError XSetFileTime	( XPARM File_t * f, FileAttrib_t * set_time );
+void InitializeWFile	( WFile_t * f );
+enumError XResetWFile	( XPARM WFile_t * f, bool remove_file );
+enumError XClearWFile	( XPARM WFile_t * f, bool remove_file );
+enumError XCloseWFile	( XPARM WFile_t * f, bool remove_file );
+enumError XSetWFileTime	( XPARM WFile_t * f, FileAttrib_t * set_time );
 
 // open files
-enumError XOpenFile       ( XPARM File_t * f, ccp fname, enumIOMode iomode );
-enumError XOpenFileModify ( XPARM File_t * f, ccp fname, enumIOMode iomode );
-enumError XCreateFile     ( XPARM File_t * f, ccp fname, enumIOMode iomode, int overwrite );
+enumError XOpenWFile       ( XPARM WFile_t * f, ccp fname, enumIOMode iomode );
+enumError XOpenWFileModify ( XPARM WFile_t * f, ccp fname, enumIOMode iomode );
+enumError XCreateWFile     ( XPARM WFile_t * f, ccp fname, enumIOMode iomode, int overwrite );
 enumError XCheckCreated   ( XPARM             ccp fname, bool disable_errors, enumError err_code );
-enumError XOpenStreamFile ( XPARM File_t * f );
-enumError XSetupAutoSplit ( XPARM File_t *f, enumOFT oft );
-enumError XSetupSplitFile ( XPARM File_t *f, enumOFT oft, off_t split_size );
-enumError XCreateSplitFile( XPARM File_t *f, uint split_idx );
-enumError XFindSplitFile  ( XPARM File_t *f, uint * index, off_t * off );
+enumError XOpenStreamWFile ( XPARM WFile_t * f );
+enumError XSetupAutoSplit ( XPARM WFile_t *f, enumOFT oft );
+enumError XSetupSplitWFile ( XPARM WFile_t *f, enumOFT oft, off_t split_size );
+enumError XCreateSplitWFile( XPARM WFile_t *f, uint split_idx );
+enumError XFindSplitWFile  ( XPARM WFile_t *f, uint * index, off_t * off );
 
 // copy filedesc
-void CopyFD ( File_t * dest, File_t * src );
+void CopyFD ( WFile_t * dest, WFile_t * src );
 
 // read cache support
-void ClearCache		 ( File_t * f );
-void DefineCachedArea    ( File_t * f, off_t off, size_t count );
-void DefineCachedAreaISO ( File_t * f, bool head_only );
+void ClearCache		 ( WFile_t * f );
+void DefineCachedArea    ( WFile_t * f, off_t off, size_t count );
+void DefineCachedAreaISO ( WFile_t * f, bool head_only );
 
 struct wdf_header_t;
-enumError XAnalyzeWH ( XPARM File_t * f, struct wdf_header_t * wh, bool print_err );
+enumError XAnalyzeWH ( XPARM WFile_t * f, struct wdf_header_t * wh, bool print_err );
 
 enumError StatFile ( struct stat * st, ccp fname, int fd );
 
 //-----------------------------------------------------------------------------
 // file io with error messages
 
-enumError XTellF	 ( XPARM File_t * f );
-enumError XSeekF	 ( XPARM File_t * f, off_t off );
-enumError XSetSizeF	 ( XPARM File_t * f, off_t size );
-enumError XPreallocateF	 ( XPARM File_t * f, off_t off, off_t size );
-enumError XReadF	 ( XPARM File_t * f,                  void * iobuf, size_t count );
-enumError XWriteF	 ( XPARM File_t * f,            const void * iobuf, size_t count );
-enumError XReadAtF	 ( XPARM File_t * f, off_t off,       void * iobuf, size_t count );
-enumError XWriteAtF	 ( XPARM File_t * f, off_t off, const void * iobuf, size_t count );
-enumError XWriteZeroAtF	 ( XPARM File_t * f, off_t off,                     size_t count );
-enumError XZeroAtF	 ( XPARM File_t * f, off_t off,                     size_t count );
+enumError XTellF	 ( XPARM WFile_t * f );
+enumError XSeekF	 ( XPARM WFile_t * f, off_t off );
+enumError XSetSizeF	 ( XPARM WFile_t * f, off_t size );
+enumError XPreallocateF	 ( XPARM WFile_t * f, off_t off, off_t size );
+enumError XReadF	 ( XPARM WFile_t * f,                  void * iobuf, size_t count );
+enumError XWriteF	 ( XPARM WFile_t * f,            const void * iobuf, size_t count );
+enumError XReadAtF	 ( XPARM WFile_t * f, off_t off,       void * iobuf, size_t count );
+enumError XWriteAtF	 ( XPARM WFile_t * f, off_t off, const void * iobuf, size_t count );
+enumError XWriteZeroAtF	 ( XPARM WFile_t * f, off_t off,                     size_t count );
+enumError XZeroAtF	 ( XPARM WFile_t * f, off_t off,                     size_t count );
 
 enumError XWriteDirectAtF
 (
     XPARM				// XPARM
-    File_t		*f,		// file to write (and read for partial blocks)
+    WFile_t		*f,		// file to write (and read for partial blocks)
     off_t		off,		// offset to write
     const void		*io_buf,	// data to write
     size_t		io_size,	// size of data to write
@@ -833,7 +625,7 @@ enumError XWriteDirectAtF
     size_t		d_size		// size of 'd_buf' or size to alloc
 );
 
-enumError ExecSeekF ( File_t * f, off_t off );
+enumError ExecSeekF ( WFile_t * f, off_t off );
 
 //-----------------------------------------------------------------------------
 // wrapper functions
@@ -850,8 +642,6 @@ char * AllocSplitFilename ( ccp path, enumOFT oft );
 //-----------------------------------------------------------------------------
 // filename generation
 
-char * NormalizeFileName ( char * buf, char * buf_end, ccp source, bool allow_slash );
-
 uint ReduceToPathAndType
 (
     char	*buf,		// valid return buffer
@@ -859,72 +649,28 @@ uint ReduceToPathAndType
     ccp		fname		// source: file name
 );
 
-void SetFileName      ( File_t * f, ccp source, bool allow_slash );
-void GenFileName      ( File_t * f, ccp path, ccp name, ccp title, ccp id6, ccp ext );
-void GenDestFileName  ( File_t * f, ccp dest, ccp default_name, ccp ext, bool rm_std_ext );
-void GenImageFileName ( File_t * f, ccp dest, ccp default_name, enumOFT oft );
+void SetWFileName      ( WFile_t * f, ccp source, bool allow_slash );
+void GenWFileName      ( WFile_t * f, ccp path, ccp name, ccp title, ccp id6, ccp ext );
+void GenDestWFileName  ( WFile_t * f, ccp dest, ccp default_name, ccp ext, bool rm_std_ext );
+void GenImageWFileName ( WFile_t * f, ccp dest, ccp default_name, enumOFT oft );
 
 //-----------------------------------------------------------------------------
 // etc
 
-int    GetFD ( const File_t * f );
-FILE * GetFP ( const File_t * f );
-char   GetFT ( const File_t * f );
+int    GetFD ( const WFile_t * f );
+FILE * GetFP ( const WFile_t * f );
+char   GetFT ( const WFile_t * f );
 
-bool IsOpenF ( const File_t * f );
-bool IsSplittedF ( const File_t * f );
-
-bool IsDirectory ( ccp fname, bool answer_if_empty );
-enumError CreatePath ( ccp fname );
+bool IsOpenF ( const WFile_t * f );
+bool IsSplittedF ( const WFile_t * f );
 
 typedef enum enumFileMode { FM_OTHER, FM_PLAIN, FM_BLKDEV, FM_CHRDEV } enumFileMode;
 enumFileMode GetFileMode ( mode_t mode );
 ccp GetFileModeText ( enumFileMode mode, bool longtext, ccp fail_text );
 
-#ifdef __CYGWIN__
-    int IsWindowsDriveSpec ( ccp src );
-    int NormalizeFilenameCygwin ( char * buf, size_t bufsize, ccp source );
-    char * AllocNormalizedFilenameCygwin ( ccp source );
-#endif
-
 void SetDest ( ccp arg, bool mkdir );
 
-s64 GetFileSize
-(
-    ccp			path1,		// NULL or part 1 of path
-    ccp			path2,		// NULL or part 2 of path
-    s64			not_found_val,	// return value if no regular file found
-    FileAttrib_t	* fatt,		// not NULL: store file attributes
-    bool		fatt_max	// true: store max values to 'fatt'
-);
-
-enumError LoadFile
-(
-    ccp			path1,		// NULL or part #1 of path
-    ccp			path2,		// NULL or part #2 of path
-    size_t		skip,		// skip num of bytes before reading
-    void		* data,		// destination buffer, size = 'size'
-    size_t		size,		// size to read
-    bool		silent,		// true: suppress printing of error messages
-    FileAttrib_t	* fatt,		// not NULL: store file attributes
-    bool		fatt_max	// true: store max values to 'fatt'
-);
-
-enumError LoadFileAlloc
-(
-    ccp			path1,		// NULL or part #1 of path
-    ccp			path2,		// NULL or part #2 of path
-    size_t		skip,		// skip num of bytes before reading
-    u8			** res_data,	// result: free existing data, store ptr to alloc data
-					// always one more byte is alloced and set to NULL
-    size_t		*  res_size,	// result: size of 'res_data'
-    size_t		max_size,	// >0: a file size limit
-    bool		silent,		// true: suppress printing of error messages
-    FileAttrib_t	* fatt,		// not NULL: store file attributes
-    bool		fatt_max	// true: store max values to 'fatt'
-);
-
-enumError CheckCreateFile
+enumError CheckCreateFileOpt
 (
     // returns:
     //   ERR_WARNING:		source is "-" (stdout) => 'st' is zeroed
@@ -939,7 +685,7 @@ enumError CheckCreateFile
     struct stat	*st		// not NULL: store file status here
 );
 
-enumError SaveFile
+enumError SaveFileOpt
 (
     ccp			path1,		// NULL or part #1 of path
     ccp			path2,		// NULL or part #2 of path
@@ -954,27 +700,24 @@ enumError SaveFile
 
 void ClearFileID
 (
-    File_t		* f
+    WFile_t		* f
 );
 
 void SetFileID
 (
-    File_t		* f,
+    WFile_t		* f,
     const void		* new_id,
     int			id_length
 );
 
 bool SetPatchFileID
 (
-    File_t		* f,
+    WFile_t		* f,
     const void		* new_id,
     int			id_length
 );
 
 //-----------------------------------------------------------------------------
-
-void mark_used ( ccp name, ... );
-#define MARK_USED(...) mark_used(0,__VA_ARGS__)
 
 void option_deprecated ( ccp name );
 void option_ignored ( ccp name );
@@ -987,7 +730,7 @@ enumError GetFileSystemMap
 (
     FileMap_t		* fm,		// file map
     bool		init_fm,	// true: initialize 'fm', false: reset 'fm'
-    File_t		* file		// file to analyze
+    WFile_t		* file		// file to analyze
 );
 
 //
@@ -1014,16 +757,10 @@ int ScanPreallocMode ( ccp arg );
 ///////////////			string functions		///////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-ccp PathCatPP  ( char * buf, size_t bufsize, ccp path1, ccp path2 );
-ccp PathCatPPE ( char * buf, size_t bufsize, ccp path1, ccp path2, ccp ext );
 char * SetupDirPath ( char * buf, size_t bufsize, ccp src_path );
 
 int PathCMP ( ccp path1, ccp path2 );
 int NintendoCMP ( ccp path1, ccp path2 );
-
-//-----
-
-int NormalizeIndent ( int indent );
 
 //-----
 
@@ -1068,6 +805,7 @@ char * ScanID	    ( char * destbuf7, int * destlen, ccp source );
 
 //-----
 
+// [[dclib]]
 char * ScanNumU32   ( ccp arg, u32 * p_stat, u32 * p_num,            u32 min, u32 max );
 char * ScanRangeU32 ( ccp arg, u32 * p_stat, u32 * p_n1, u32 * p_n2, u32 min, u32 max );
 
@@ -1106,98 +844,12 @@ enumError ScanHexSilent
     ccp		arg		// source string
 );
 
-//-----------------------------------------------------------------------------
-
-void PutLines
-(
-    FILE	* f,		// valid output stream
-    int		indent,		// indent of output
-    int		fw,		// field width of output
-    int		first_line,	// length without prefix of already printed first line 
-    ccp		prefix,		// NULL or prefix for each line
-    ccp		text		// text to print
-);
-
-void PrintLines
-(
-    FILE	* f,		// valid output stream
-    int		indent,		// indent of output
-    int		fw,		// field width of output
-    int		first_line,	// length without prefix of already printed first line 
-    ccp		prefix,		// NULL or prefix for each line
-    ccp		format,		// format string for vsnprintf()
-    ...				// arguments for 'vsnprintf(format,...)'
-
-) __attribute__ ((__format__(__printf__,6,7)));
-
-//
-///////////////////////////////////////////////////////////////////////////////
-///////////////			    scan number			///////////////
-///////////////////////////////////////////////////////////////////////////////
-
-char * ScanS32
-(
-    // return 'source' on error
-
-    s32		*res_num,		// not NULL: store result (only on success)
-    ccp		source,			// NULL or source text
-    uint	default_base		// base for numbers without '0x' prefix
-					//  0: C like with octal support
-					// 10: standard value for decimal numbers
-					// 16: standard value for hex numbers
-);
-
-static inline char * ScanU32 ( u32 *res_num, ccp source, uint default_base )
-	{ return ScanS32((s32*)res_num,source,default_base); }
-
-//-----------------------------------------------------------------------------
-
-char * ScanS64
-(
-    // return 'source' on error
-
-    s64		*res_num,		// not NULL: store result (only on success)
-    ccp		source,			// NULL or source text
-    uint	default_base		// base for numbers without '0x' prefix
-					//  0: C like with octal support
-					// 10: standard value for decimal numbers
-					// 16: standard value for hex numbers
-);
-
-static inline char * ScanU64 ( u64 *res_num, ccp source, uint default_base )
-	{ return ScanS64((s64*)res_num,source,default_base); }
-
 //
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////                     scan size                   ///////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-u64 ScanSizeFactor ( char ch_factor, int force_base );
-
-char * ScanSizeTerm ( double * num, ccp source,
-		      u64 default_factor, int force_base );
-
-char * ScanSize ( double * num, ccp source,
-		  u64 default_factor1, u64 default_factor2, int force_base );
-
-char * ScanSizeU32 ( u32 * num, ccp source,
-		     u64 default_factor1, u64 default_factor2, int force_base );
-
-char * ScanSizeU64 ( u64 * num, ccp source,
-		     u64 default_factor1, u64 default_factor2, int force_base );
-
-enumError ScanSizeOpt
-	( double * num, ccp source,
-	  u64 default_factor1, u64 default_factor2, int force_base,
-	  ccp opt_name, u64 min, u64 max, bool print_err );
-
-enumError ScanSizeOptU64
-	( u64 * num, ccp source, u64 default_factor1, int force_base,
-	  ccp opt_name, u64 min, u64 max, u32 multiple, u32 pow2, bool print_err );
-
-enumError ScanSizeOptU32
-	( u32 * num, ccp source, u64 default_factor1, int force_base,
-	  ccp opt_name, u64 min, u64 max, u32 multiple, u32 pow2, bool print_err );
+u64 ScanSizeFactorWii ( char ch_factor, int force_base );
 
 //-----------------------------------------------------------------------------
 
@@ -1383,6 +1035,7 @@ enum enumPrintTime
 };
 
 ///////////////////////////////////////////////////////////////////////////////
+// [[PrintTime_t]]
 
 #define PT_BUF_SIZE 24
 
@@ -1422,6 +1075,7 @@ time_t	ScanTime	( ccp arg );
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////              string fields & lists              ///////////////
 ///////////////////////////////////////////////////////////////////////////////
+// [[IdItem_t]]
 
 typedef struct IdItem_t
 {
@@ -1433,6 +1087,7 @@ typedef struct IdItem_t
 } IdItem_t;
 
 //-----------------------------------------------------------------------------
+// [[IdField_t]]
 
 typedef struct IdField_t
 {
@@ -1462,109 +1117,82 @@ void DumpIdField ( FILE *f, int indent, const IdField_t * idf );
 ///////////////			struct StringField_t		///////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-typedef struct StringField_t
-{
-    ccp		* field;	// pointer to the string field
-    uint	used;		// number of used titles in the title field
-    uint	size;		// number of allocated pointer in 'field'
-
-} StringField_t;
-
-//-----------------------------------------------------------------------------
-
-void InitializeStringField ( StringField_t * sf );
-void ResetStringField ( StringField_t * sf );
-
-// return: pointer to matched key if the key is in the field.
-ccp FindStringField ( StringField_t * sf, ccp key );
-
-// return: true if item inserted/deleted
-bool InsertStringField ( StringField_t * sf, ccp key,  bool move_key );
-bool RemoveStringField ( StringField_t * sf, ccp key );
-
-// special id6 support
-IdItem_t * InsertStringID6 ( StringField_t * sf, void * id6, char flag, ccp arg );
-
-// append at the end an do not sort
-void AppendStringField ( StringField_t * sf, ccp key, bool move_key );
-
-// return the index of the (next) item
-uint FindStringFieldHelper ( StringField_t * sf, bool * found, ccp key );
-
-// file support
-enumError LoadStringField ( StringField_t * sf, bool sort, ccp filename, bool silent );
-enumError SaveStringField ( StringField_t * sf, ccp filename, bool rm_if_empty );
+IdItem_t * InsertStringID6
+	( StringField_t * sf, void * id6, char flag, ccp arg );
 
 //
 ///////////////////////////////////////////////////////////////////////////////
-///////////////			struct ParamField_t		///////////////
+///////////////			struct WiiParamField_t		///////////////
 ///////////////////////////////////////////////////////////////////////////////
+// [[dclib]] use ParamField_t?
 
-typedef enum ParamFieldType_t
+typedef enum WiiParamFieldType_t
 {
     PFT_NONE,
     PFT_ALIGN,
 
-} ParamFieldType_t;
+} WiiParamFieldType_t;
 
 //-----------------------------------------------------------------------------
+// [[WiiParamFieldItem_t]]
 
-typedef struct ParamFieldItem_t
+typedef struct WiiParamFieldItem_t
 {
     ccp			key;		// string key of object
     uint		count;		// a free counter
     uint		num;		// a free number
 
-} ParamFieldItem_t;
+} WiiParamFieldItem_t;
 
 //-----------------------------------------------------------------------------
+// [[WiiParamField_t]]
 
-typedef struct ParamField_t
+typedef struct WiiParamField_t
 {
-    ParamFieldItem_t	* list;		// pointer to the item list
+    WiiParamFieldItem_t	* list;		// pointer to the item list
     uint		used;		// number of used elements of 'list'
     uint		size;		// number of allocated  elements of 'list'
-    ParamFieldType_t	pft;		// type of list
+    WiiParamFieldType_t	pft;		// type of list
 
-} ParamField_t;
+} WiiParamField_t;
 
 //-----------------------------------------------------------------------------
 
-void InitializeParamField ( ParamField_t * pf, ParamFieldType_t pft );
-void ResetParamField ( ParamField_t * pf );
-void MoveParamField ( ParamField_t * dest, ParamField_t * src );
+void InitializeWiiParamField ( WiiParamField_t * pf, WiiParamFieldType_t pft );
+void ResetWiiParamField ( WiiParamField_t * pf );
+void MoveWiiParamField ( WiiParamField_t * dest, WiiParamField_t * src );
 
-int FindParamFieldIndex ( const ParamField_t * pf, ccp key, int not_found_value );
-ParamFieldItem_t * FindParamField ( const ParamField_t * pf, ccp key );
-bool RemoveParamField ( ParamField_t * pf, ccp key ); // return: true if item deleted
+int FindWiiParamFieldIndex ( const WiiParamField_t * pf, ccp key, int not_found_value );
+WiiParamFieldItem_t * FindWiiParamField ( const WiiParamField_t * pf, ccp key );
+bool RemoveWiiParamField ( WiiParamField_t * pf, ccp key ); // return: true if item deleted
 
-ParamFieldItem_t * InsertParamField
+WiiParamFieldItem_t * InsertWiiParamField
 (
-    ParamField_t	* pf,		// valid param field
+    WiiParamField_t	* pf,		// valid param field
     ccp			key,		// key to insert
     uint		num		// value
 );
 
-enumError LoadParamField
+enumError LoadWiiParamField
 (
-    ParamField_t	* pf,		// param field
-    ParamFieldType_t	init_pf,	// >0: initialize 'pf' with entered type
+    WiiParamField_t	* pf,		// param field
+    WiiParamFieldType_t	init_pf,	// >0: initialize 'pf' with entered type
     ccp			filename,	// filename of source file
     bool		silent		// true: don't print open/read errors
 );
 
-enumError SaveParamField
+enumError SaveWiiParamField
 (
-    ParamField_t	* pf,		// valid param field
+    WiiParamField_t	* pf,		// valid param field
     ccp			filename,	// filename of dest file
     bool		rm_if_empty	// true: rm dest file if 'pf' is empty
 );
 
-enumError WriteParamField
+enumError WriteWiiParamField
 (
     FILE		* f,		// open destination file
     ccp			filename,	// NULL or filename (needed on write error)
-    ParamField_t	* pf,		// valid param field
+    WiiParamField_t	* pf,		// valid param field
     ccp			line_prefix,	// not NULL: insert prefix before each line
     ccp			key_prefix,	// not NULL: insert prefix before each key
     ccp			eol		// end of line text (if NULL: use LF)
@@ -1574,6 +1202,7 @@ enumError WriteParamField
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////			    some list			///////////////
 ///////////////////////////////////////////////////////////////////////////////
+// [[StringList_t]]
 
 typedef struct StringList_t
 {
@@ -1583,6 +1212,7 @@ typedef struct StringList_t
 } StringList_t;
 
 ///////////////////////////////////////////////////////////////////////////////
+// [[ParamList_t]]
 
 typedef struct ParamList_t
 {
@@ -1614,10 +1244,20 @@ int AddParam ( ccp arg, int is_temp );
 void AtExpandParam ( ParamList_t ** param );
 void AtExpandAllParam ( ParamList_t ** first_param );
 
+///////////////////////////////////////////////////////////////////////////////
+
+struct wd_disc_t;
+void InsertDiscMemMap
+(
+    MemMap_t		* mm,		// valid memory map pointer
+    struct wd_disc_t	* disc		// valid disc pointer
+);
+
 //
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////              string substitutions               ///////////////
 ///////////////////////////////////////////////////////////////////////////////
+// [[SubstString_t]]
 
 typedef struct SubstString_t
 {
@@ -1636,6 +1276,7 @@ bool HaveEscapeChar ( ccp string );
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////			setup files			///////////////
 ///////////////////////////////////////////////////////////////////////////////
+// [[SetupDef_t]]
 
 typedef struct SetupDef_t
 {
@@ -1709,6 +1350,7 @@ u64 GetMemLimit();
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////			data area & list		///////////////
 ///////////////////////////////////////////////////////////////////////////////
+// [[DataArea_t]]
 
 typedef struct DataArea_t
 {
@@ -1719,6 +1361,7 @@ typedef struct DataArea_t
 } DataArea_t;
 
 //-----------------------------------------------------------------------------
+// [[DataList_t]]
 
 typedef struct DataList_t
 {
@@ -1774,31 +1417,6 @@ typedef enum RepairMode
 extern RepairMode repair_mode;
 
 RepairMode ScanRepairMode ( ccp arg );
-
-///////////////////////////////////////////////////////////////////////////////
-///////////////			random mumbers			///////////////
-///////////////////////////////////////////////////////////////////////////////
-
-u32 Random32 ( u32 max );
-u64 Seed32Time();
-u64 Seed32 ( u64 base );
-
-void RandomFill ( void * buf, size_t size );
-
-///////////////////////////////////////////////////////////////////////////////
-///////////////			    bit handling		///////////////
-///////////////////////////////////////////////////////////////////////////////
-
-extern const uchar TableBitCount[0x100];
-
-uint Count1Bits   ( const void * data, size_t len );
-uint Count1Bits8  ( u8  data );
-uint Count1Bits16 ( u16 data );
-uint Count1Bits32 ( u32 data );
-uint Count1Bits64 ( u64 data );
-
-int FindLowest1Bit64 ( u64 data );
-u64 GetAlign64 ( u64 data );
 
 //
 ///////////////////////////////////////////////////////////////////////////////

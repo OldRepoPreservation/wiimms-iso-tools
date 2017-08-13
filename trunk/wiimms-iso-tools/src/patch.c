@@ -59,7 +59,7 @@ int opt_hook = 0; // <0: disabled, =0: auto, >0: enabled
 
 enumEncoding ScanEncoding ( ccp arg )
 {
-    static const CommandTab_t tab[] =
+    static const KeywordTab_t tab[] =
     {
 	{ 0,			"AUTO",		0,		ENCODE_MASK },
 
@@ -75,7 +75,7 @@ enumEncoding ScanEncoding ( ccp arg )
 	{ 0,0,0,0 }
     };
 
-    const int stat = ScanCommandListMask(arg,tab);
+    const int stat = ScanKeywordListMask(arg,tab);
     if ( stat >= 0 )
 	return stat & ENCODE_MASK;
 
@@ -133,7 +133,7 @@ enumEncoding SetEncoding
 
 enumRegion ScanRegion ( ccp arg )
 {
-    static const CommandTab_t tab[] =
+    static const KeywordTab_t tab[] =
     {
 	{ REGION_JAP,		"JAPAN",	"JAP",		0 },
 	{ REGION_USA,		"USA",		0,		0 },
@@ -146,7 +146,7 @@ enumRegion ScanRegion ( ccp arg )
 	{ 0,0,0,0 }
     };
 
-    const int stat = ScanCommandListMask(arg,tab);
+    const int stat = ScanKeywordListMask(arg,tab);
     if ( stat >= 0 )
 	return stat;
 
@@ -244,7 +244,7 @@ const RegionInfo_t * GetRegionInfo ( char region_code )
 
 wd_ckey_index_t ScanCommonKey ( ccp arg )
 {
-    static const CommandTab_t tab[] =
+    static const KeywordTab_t tab[] =
     {
 	{ WD_CKEY_STANDARD,	"STANDARD",	0,		0 },
 	{ WD_CKEY_KOREA,	"KOREAN",	0,		0 },
@@ -256,7 +256,7 @@ wd_ckey_index_t ScanCommonKey ( ccp arg )
 	{ 0,0,0,0 }
     };
 
-    const int stat = ScanCommandListMask(arg,tab);
+    const int stat = ScanKeywordListMask(arg,tab);
     if ( stat >= 0 )
 	return stat;
 
@@ -503,7 +503,7 @@ int patch_main ( wd_disc_t * disc )
 
 wd_modify_t ScanModify ( ccp arg )
 {
-    static const CommandTab_t tab[] =
+    static const KeywordTab_t tab[] =
     {
 	{ WD_MODIFY__NONE,	"NONE",		"-",	WD_MODIFY__ALL },
 	{ WD_MODIFY__ALL,	"ALL",		0,	WD_MODIFY__ALL },
@@ -519,7 +519,7 @@ wd_modify_t ScanModify ( ccp arg )
 	{ 0,0,0,0 }
     };
 
-    const int stat = ScanCommandList(arg,tab,0,true,0,0);
+    const int stat = ScanKeywordList(arg,tab,0,true,0,0,0,0);
     if ( stat >= 0 )
 	return ( stat & WD_MODIFY__ALL ? stat & WD_MODIFY__ALL : stat ) | WD_MODIFY__ALWAYS;
 
@@ -870,7 +870,7 @@ wd_trim_mode_t ScanTrim
     ccp err_text_extend		// error message extention
 )
 {
-    static const CommandTab_t tab[] =
+    static const KeywordTab_t tab[] =
     {
 	{ WD_TRIM_DEFAULT,	"DEFAULT",	0,	WD_TRIM_M_ALL },
 
@@ -888,7 +888,7 @@ wd_trim_mode_t ScanTrim
 	{ 0,0,0,0 }
     };
 
-    const int stat = ScanCommandList(arg,tab,0,true,0,0);
+    const int stat = ScanKeywordList(arg,tab,0,true,0,0,0,0);
     if ( stat >= 0 )
 	return stat;
 

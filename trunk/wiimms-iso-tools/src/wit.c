@@ -52,7 +52,9 @@
 #include <ctype.h>
 #include <errno.h>
 
-#include "debug.h"
+#include "dclib/dclib-debug.h"
+#include "dclib/dclib-file.h"
+
 #include "version.h"
 #include "wiidisc.h"
 #include "lib-std.h"
@@ -88,10 +90,10 @@ static void help_exit ( bool xmode )
     {
 	int cmd;
 	for ( cmd = 0; cmd < CMD__N; cmd++ )
-	    PrintHelpCmd(&InfoUI,stdout,0,cmd,0,0);
+	    PrintHelpCmd(&InfoUI_wit,stdout,0,cmd,0,0,URI_HOME);
     }
     else
-	PrintHelpCmd(&InfoUI,stdout,0,0,"HELP",0);
+	PrintHelpCmd(&InfoUI_wit,stdout,0,0,"HELP",0,URI_HOME);
 
     exit(ERR_OK);
 }
@@ -161,7 +163,7 @@ void print_title ( FILE * f )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-static const CommandTab_t * current_command = 0;
+static const KeywordTab_t * current_command = 0;
 
 static void hint_exit ( enumError stat )
 {
@@ -184,9 +186,9 @@ static void syntax_error ( ccp func, ccp file, uint line )
 {
     if ( current_command
 	&& current_command->id >= 0
-	&& current_command->id < InfoUI.n_cmd )
+	&& current_command->id < InfoUI_wit.n_cmd )
     {
-	const InfoCommand_t *ic = InfoUI.cmd_info + current_command->id;
+	const InfoCommand_t *ic = InfoUI_wit.cmd_info + current_command->id;
 	if (strchr(ic->syntax,'\n'))
 	{
 	    ccp src = ic->syntax;
@@ -387,7 +389,7 @@ static enumError cmd_cert()
     if ( opt_dest && *opt_dest )
     {
 	if (opt_mkdir)
-	    CreatePath(opt_dest);
+	    CreatePath(opt_dest,false);
 	f = fopen(opt_dest,"wb");
 	if (!f)
 	    return ERROR0(ERR_CANT_CREATE,"Can't create cert file: %s\n",opt_dest);
@@ -446,7 +448,7 @@ static enumError cmd_create()
     };
 
 
-    static const CommandTab_t tab[] =
+    static const KeywordTab_t tab[] =
     {						    // min + max param
 	{ SC_TICKET,	"TICKET",	"TIK",		0 | 0x100 * 2 },
 	{ SC_TMD,	"TMD",		0,		0 | 0x100 * 1 },
@@ -457,10 +459,10 @@ static enumError cmd_create()
     ParamList_t * param = first_param;
     ccp cmd_name = param->arg;
     int cmd_stat;
-    const CommandTab_t * cmd = ScanCommand(&cmd_stat,cmd_name,tab);
+    const KeywordTab_t * cmd = ScanKeyword(&cmd_stat,cmd_name,tab);
     if (!cmd)
     {
-	PrintCommandError(tab,cmd_name,cmd_stat,"sub command");
+	PrintKeywordError(tab,cmd_name,cmd_stat,0,"sub command");
 	hint_exit(ERR_SYNTAX);
     }
 
@@ -551,7 +553,7 @@ static enumError cmd_create()
 		Dump_TIK_MEM(stdout,2,&tik,0);
 	    if (!testmode)
 	    {
-		const enumError err = SaveFile(path,0,opt_overwrite,opt_mkdir,
+		const enumError err = SaveFileOpt(path,0,opt_overwrite,opt_mkdir,
 						&tik,sizeof(tik),false);
 		if (!err)
 		    return err;
@@ -586,7 +588,7 @@ static enumError cmd_create()
 		Dump_TMD_MEM(stdout,2,tmd,1,0);
 	    if (!testmode)
 	    {
-		const enumError err = SaveFile(path,0,opt_overwrite,opt_mkdir,
+		const enumError err = SaveFileOpt(path,0,opt_overwrite,opt_mkdir,
 						tmd,sizeof(tmd_buf),false);
 		if (!err)
 		    return err;
@@ -659,7 +661,7 @@ static void DumpDolRec ( dol_patch_t *dol )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-static char * ScanHexString
+static char * ScanHexStringWit
 (
     u8		*buf,		// destination buffer
     uint	bufsize,	// size of 'buf'
@@ -669,6 +671,15 @@ static char * ScanHexString
 {
     DASSERT(buf);
     DASSERT(src);
+
+ #if 1 // [[dclib+]]
+
+    const uint len = ScanHexString(buf,bufsize,&src,NULL,true);
+    if (n_read)
+	*n_read = len;
+    return (char*)src;
+
+ #else // [[obsolete]] 2017-01
 
     uint count;
     for ( count = 0; count < bufsize; )
@@ -692,6 +703,8 @@ static char * ScanHexString
     if (n_read)
 	*n_read = count;
     return (char*)src;
+
+ #endif
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -843,7 +856,6 @@ static enumError ScanNewSection ( dol_patch_t *dol, ccp src )
     return ERROR0(ERR_WARNING,"Syntax for 'NEW': type,AUTO | type,addr,size: %s\n",src);
 }
 
-//
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -978,7 +990,7 @@ static enumError PatchDol ( dol_patch_t *dol, hex_patch_t *hex )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-static void LoadPatchFile
+static void LoadPatchWFile
 	( dol_patch_t *dol, hex_patch_t *hex, ccp param, ccp src_path )
 {
     DASSERT(dol);
@@ -999,7 +1011,7 @@ static void LoadPatchFile
     {
 	size_t size;
 	if ( !LoadFileAlloc(param, 0, 0,
-		&hex->patch_data, &size, 10*MiB, true, 0, false ))
+		&hex->patch_data, &size, 10*MiB, 2, 0, false ))
 	{
 	    noPRINT(" -> |%s|\n",param);
 	    hex->n_patch = size;
@@ -1031,10 +1043,10 @@ static void LoadPatchFile
 
 	    size_t size;
 	    if ( fname && !LoadFileAlloc(fname, 0, 0,
-		    &hex->patch_data, &size, MAX_SIZE, true, 0, false ))
+		    &hex->patch_data, &size, MAX_SIZE, 2, 0, false ))
 	    {
 		if ( verbose >= 1 )
-		    printf("+File loaded [%zu bytes]: %s\n",size,fname);
+		    printf("+WFile loaded [%zu bytes]: %s\n",size,fname);
 		hex->n_patch = size;
 		break;
 	    }
@@ -1056,10 +1068,10 @@ static void LoadPatchFile
 
 	size_t size;
 	if (!LoadFileAlloc(fname, 0, 0,
-		    &hex->patch_data, &size, MAX_SIZE, false, 0, false ))
+		    &hex->patch_data, &size, MAX_SIZE, 0, 0, false ))
 	{
 	    if ( verbose >= 1 )
-		printf("+File loaded [%zu bytes]: %s\n",size,fname);
+		printf("+WFile loaded [%zu bytes]: %s\n",size,fname);
 	    hex->n_patch = size;
 	}
     }
@@ -1079,7 +1091,7 @@ static enumError ScanXML ( dol_patch_t *dol, ccp fname )
     u8 *xml;
     size_t xml_size;
     enumError err = LoadFileAlloc( fname, 0, 0, &xml, &xml_size,
-					10*MiB, false, 0, false );
+					10*MiB, 0, 0, false );
     if (err)
 	return err;
 
@@ -1137,17 +1149,17 @@ static enumError ScanXML ( dol_patch_t *dol, ccp fname )
 		    if (!strcmp(beg_name,"offset"))
 			ScanU32(&hex.addr,beg_par,10);
 		    else if (!strcmp(beg_name,"original"))
-			ScanHexString(hex.cmp,sizeof(hex.cmp),&hex.n_cmp,beg_par);
+			ScanHexStringWit(hex.cmp,sizeof(hex.cmp),&hex.n_cmp,beg_par);
 		    else if (!strcmp(beg_name,"value"))
 		    {
-			ScanHexString((u8*)iobuf,sizeof(iobuf),&hex.n_patch,beg_par);
+			ScanHexStringWit((u8*)iobuf,sizeof(iobuf),&hex.n_patch,beg_par);
 			if ( hex.n_patch <= sizeof(hex.patch) )
 			    memcpy(hex.patch,iobuf,hex.n_patch);
 			else
 			    hex.patch_data = MEMDUP(iobuf,hex.n_patch);
 		    }
 		    else if (!strcmp(beg_name,"valuefile"))
-			LoadPatchFile(dol,&hex,beg_par,fname);
+			LoadPatchWFile(dol,&hex,beg_par,fname);
 		}
 	    }
 
@@ -1186,7 +1198,7 @@ static enumError cmd_dolpatch()
     dol.term_wd = GetTermWidth(80,40) - 1;
     enumError err = LoadFileAlloc( dol_fname, 0, 0,
 					&dol.data, &dol.size, 100*MiB,
-					false, &dol.fatt, false );
+					0, &dol.fatt, false );
     if (err)
 	return err;
 
@@ -1263,7 +1275,7 @@ static enumError cmd_dolpatch()
 		continue;
 	    }
 	    ptr++;
-	    LoadPatchFile(&dol,&hex,ptr,0);
+	    LoadPatchWFile(&dol,&hex,ptr,0);
 	    PatchDol(&dol,&hex);
 	    FREE(hex.patch_data);
 	}
@@ -1292,13 +1304,13 @@ static enumError cmd_dolpatch()
 	    hex_patch_t hex;
 	    memset(&hex,0,sizeof(hex));
 	    hex.addr = addr;
-	    ptr = ScanHexString((u8*)iobuf,sizeof(iobuf),&hex.n_patch,ptr);
+	    ptr = ScanHexStringWit((u8*)iobuf,sizeof(iobuf),&hex.n_patch,ptr);
 	    if ( hex.n_patch <= sizeof(hex.patch) )
 		memcpy(hex.patch,iobuf,hex.n_patch);
 	    else
 		hex.patch_data = MEMDUP(iobuf,hex.n_patch);
 	    if ( *ptr == '#' )
-		ScanHexString(hex.cmp,sizeof(hex.cmp),&hex.n_cmp,ptr+1);
+		ScanHexStringWit(hex.cmp,sizeof(hex.cmp),&hex.n_cmp,ptr+1);
 	    PatchDol(&dol,&hex);
 	}
     }
@@ -1345,9 +1357,9 @@ static enumError cmd_dolpatch()
     {
 	const bool overwrite = opt_overwrite || !opt_dest || !*opt_dest;
 	if (!testmode)
-	    err = SaveFile(dest_fname,0,overwrite,opt_mkdir,dol.data,dol.size,false);
+	    err = SaveFileOpt(dest_fname,0,overwrite,opt_mkdir,dol.data,dol.size,false);
 	else
-	    CheckCreateFile(dest_fname,false,overwrite,false,0);
+	    CheckCreateFileOpt(dest_fname,false,overwrite,false,0);
     }
 
 
@@ -1378,9 +1390,9 @@ static enumError cmd_code()
     {
 	if (verbose)
 	    fprintf(stderr,"CODE %s\n",param->arg);
-	File_t F;
-	InitializeFile(&F);
-	if (!OpenFile(&F,param->arg,IOM_FORCE_STREAM))
+	WFile_t F;
+	InitializeWFile(&F);
+	if (!OpenWFile(&F,param->arg,IOM_FORCE_STREAM))
 	{
 	    while ( !feof(F.fp) && !ferror(F.fp) )
 	    {
@@ -1391,7 +1403,7 @@ static enumError cmd_code()
 		fwrite(iobuf,1,size,stdout);
 	    }
 	}
-	ResetFile(&F,false);
+	ResetWFile(&F,false);
     }
     return ERR_OK;
 }
@@ -1803,32 +1815,36 @@ enumError exec_print_id6 ( SuperFile_t * sf, Iterator_t * it )
     if (!disc)
 	return ERR_OK;
 
-    wd_part_t *part = it->long_count > 1 ? disc->part : disc->main_part;
+    wd_part_t *main_part = disc->main_part;
 
-    if ( !part || !disc->n_part )
+    if ( !main_part || !disc->n_part )
 	printf("%6s  --   --    --  ", wd_print_id(&disc->dhead,6,0));
     else
     {
-	const u32 *tick_id = (u32*)(part->ph.ticket.title_id+4);
+	const u32 *tick_id = (u32*)(main_part->ph.ticket.title_id+4);
+	const u32 *tmd_id = main_part->tmd ?( u32*)(main_part->tmd->title_id+4) : 0;
 	printf("%6s %4s %4s %6s",
 		wd_print_id(&disc->dhead,6,0),
-		tick_id[0] ? wd_print_id(tick_id,4,0) : "-- ",
-		part->tmd ? wd_print_id(part->tmd->title_id+4,4,0) : "-- ",
-		wd_print_id(&part->boot,6,0) );
+		wd_print_id_col(tick_id,4,&disc->dhead,colout),
+		wd_print_id_col(tmd_id,4,&disc->dhead,colout),
+		wd_print_id_col(&main_part->boot,6,&disc->dhead,colout) );
     }
 
     printf(" %-6s %s  %s\n",
-	sf->wbfs_id6[0] ? sf->wbfs_id6 : "  --",
-	wd_print_part_name(0,0,part->part_type,WD_PNAME_NAME_NUM_9),
+	wd_print_id_col(sf->wbfs_id6,6,&disc->dhead,colout),
+	wd_print_part_name(0,0,main_part->part_type,WD_PNAME_NAME_NUM_9),
 	sf->f.fname );
 
     if ( it->long_count < 2 )
 	return ERR_OK;
 
     int pi;
-    for ( pi = 1; pi < disc->n_part; pi++ )
+    for ( pi = 0; pi < disc->n_part; pi++ )
     {
-	part = wd_get_part_by_index(disc,pi,0);
+	wd_part_t *part = wd_get_part_by_index(disc,pi,0);
+	if ( part == main_part )
+	    continue;
+
 	const u32 *tick_id = (u32*)(part->ph.ticket.title_id+4);
 	printf("     > %4s %4s %-13s %s\n",
 		tick_id[0] ? wd_print_id(tick_id,4,0) : "-- ",
@@ -1858,36 +1874,41 @@ enumError exec_print_id8 ( SuperFile_t * sf, Iterator_t * it )
 	return ERR_OK;
     }
 
-    wd_part_t *part = it->long_count > 1 ? disc->part : disc->main_part;
+    wd_part_t *main_part = disc->main_part;
 
-    if ( !part || !disc->n_part )
+    if ( !main_part || !disc->n_part )
 	printf("%6s %02x.%02x  --   --    --  ",
 		wd_print_id(&disc->dhead,6,0),
 		disc->dhead.disc_number, disc->dhead.disc_version );
     else
     {
-	const u32 *tick_id = (u32*)(part->ph.ticket.title_id+4);
+	const u32 *tick_id = (u32*)(main_part->ph.ticket.title_id+4);
+	const u32 *tmd_id = main_part->tmd ?( u32*)(main_part->tmd->title_id+4) : 0;
+
 	printf("%6s %02x.%02x %4s %4s %6s %02x.%02x",
 		wd_print_id(&disc->dhead,6,0),
 		disc->dhead.disc_number, disc->dhead.disc_version,
-		tick_id[0] ? wd_print_id(tick_id,4,0) : "-- ",
-		part->tmd ? wd_print_id(part->tmd->title_id+4,4,0) : "-- ",
-		wd_print_id(&part->boot,6,0),
-		part->boot.dhead.disc_number, part->boot.dhead.disc_version );
+		wd_print_id_col(tick_id,4,&disc->dhead,colout),
+		wd_print_id_col(tmd_id,4,&disc->dhead,colout),
+		wd_print_id_col(&main_part->boot,6,&disc->dhead,colout),
+		main_part->boot.dhead.disc_number, main_part->boot.dhead.disc_version );
     }
 
     printf(" %-6s %s  %s\n",
-	sf->wbfs_id6[0] ? sf->wbfs_id6 : "  --",
-	wd_print_part_name(0,0,part->part_type,WD_PNAME_NAME_NUM_9),
+	wd_print_id_col(sf->wbfs_id6,6,&disc->dhead,colout),
+	wd_print_part_name(0,0,main_part->part_type,WD_PNAME_NAME_NUM_9),
 	sf->f.fname );
 
     if ( it->long_count < 2 )
 	return ERR_OK;
 
     int pi;
-    for ( pi = 1; pi < disc->n_part; pi++ )
+    for ( pi = 0; pi < disc->n_part; pi++ )
     {
-	part = wd_get_part_by_index(disc,pi,0);
+	wd_part_t *part = wd_get_part_by_index(disc,pi,0);
+	if ( part == main_part )
+	    continue;
+
 	const u32 *tick_id = (u32*)(part->ph.ticket.title_id+4);
 	printf("           > %4s %4s %6s %02x.%02x %16s\n",
 		tick_id[0] ? wd_print_id(tick_id,4,0) : "-- ",
@@ -1908,15 +1929,23 @@ static enumError cmd_id_long ( uint mode )
     if (print_header)
     {
 	if ( mode == 8 )
-	    printf(	"\n"
-		" DISC  DISC  TICK TMD   BOOT  BOOT   WBFS\n"
-		" ID6   VERS  ID4  ID4   ID6   VERS   ID6   Partition  File\n"
-		"%.79s\n", sep_79);
+	    printf(
+		"\n"
+		"%s DISC  DISC  TICK TMD   BOOT  BOOT   WBFS%s\n"
+		"%s ID6   VERS  ID4  ID4   ID6   VERS   ID6   Partition  Image File%s\n"
+		"%s%.79s%s\n",
+		colout->heading, colout->reset,
+		colout->heading, colout->reset,
+		colout->heading, Minus300, colout->reset );
 	else
-	    printf(	"\n"
-		" DISC  TICK TMD   BOOT   WBFS\n"
-		" ID6   ID4  ID4   ID6    ID6   Partition  File\n"
-		"%.79s\n", sep_79);
+	    printf(
+		"\n"
+		"%s DISC  TICK TMD   BOOT   WBFS%s\n"
+		"%s ID6   ID4  ID4   ID6    ID6   Partition  Image File%s\n"
+		"%s%.79s%s\n",
+		colout->heading, colout->reset,
+		colout->heading, colout->reset,
+		colout->heading, Minus300, colout->reset );
     }
 
     Iterator_t it;
@@ -1990,7 +2019,7 @@ enumError exec_collect ( SuperFile_t * sf, Iterator_t * it )
 	item->wbfs_slot = -1;
 	item->wbfs_fragments = 0;
     }
-    CopyFileAttrib(&item->fatt,&sf->f.fatt);
+    SetFileAttrib(&item->fatt,&sf->f.fatt,0);
 
     ResetWDiscInfo(&wdi);
 
@@ -2305,7 +2334,7 @@ static enumError cmd_list ( int long_level )
 {
     if ( long_level > 0 )
     {
-	RegisterOptionByIndex(&InfoUI,OPT_LONG,long_level,false);
+	RegisterOptionByIndex(&InfoUI_wit,OPT_LONG,long_level,false);
 	long_count += long_level;
     }
 
@@ -2544,7 +2573,7 @@ static enumError cmd_files ( int long_level )
 {
     if ( long_level > 0 )
     {
-	RegisterOptionByIndex(&InfoUI,OPT_LONG,long_level,false);
+	RegisterOptionByIndex(&InfoUI_wit,OPT_LONG,long_level,false);
 	long_count += long_level;
     }
 
@@ -2609,7 +2638,7 @@ static enumError cmd_diff ( bool file_level )
 	pat->rules.used = 0;
 	AddFilePattern("+",PAT_DEFAULT);
 	PRINT("FIRST FILE LEVEL\n");
-	RegisterOptionByIndex(&InfoUI,OPT_FILES,1,false);
+	RegisterOptionByIndex(&InfoUI_wit,OPT_FILES,1,false);
     }
     else if (OptionUsed[OPT_FILES])
     {
@@ -2870,7 +2899,7 @@ enumError exec_copy ( SuperFile_t * fi, Iterator_t * it )
 	TRACE("COPY, mkdir=%d\n",opt_mkdir);
 	fo.f.create_directory = opt_mkdir;
 	ccp oname = fi->f.outname ? fi->f.outname : fname;
-	GenImageFileName(&fo.f,opt_dest,oname,oft);
+	GenImageWFileName(&fo.f,opt_dest,oname,oft);
 	SubstFileNameSF(&fo,fi,0);
 
 	if ( it->update && !StatFile(&fo.f.st,fo.f.fname,-1) )
@@ -3307,7 +3336,7 @@ enumError exec_imgfiles ( SuperFile_t * fi, Iterator_t * it )
     int n = fi->f.split_used;
     if (n)
     {
-	File_t **f = fi->f.split_f;
+	WFile_t **f = fi->f.split_f;
 	while ( n-- > 0 )
 	{
 	    printf("%s%c",(*f)->fname,eol);
@@ -3441,7 +3470,7 @@ enumError exec_move ( SuperFile_t * fi, Iterator_t * it )
 			: fi->f.outname
 				? fi->f.outname
 				: fi->f.fname;
-    GenImageFileName(&fo.f,opt_dest,oname,fi->iod.oft);
+    GenImageWFileName(&fo.f,opt_dest,oname,fi->iod.oft);
     SubstFileNameSF(&fo,fi,0);
 
     if ( strcmp(fi->f.fname,fo.f.fname) )
@@ -3455,7 +3484,7 @@ enumError exec_move ( SuperFile_t * fi, Iterator_t * it )
 	}
 	else if ( !it->overwrite && !stat_status )
 	{
-	    ERROR0(ERR_CANT_CREATE,"File already exists: %s\n",fo.f.fname);
+	    ERROR0(ERR_CANT_CREATE,"WFile already exists: %s\n",fo.f.fname);
 	}
 	else if (!CheckCreated(fo.f.fname,false,ERR_CANT_CREATE))
 	{
@@ -3522,13 +3551,13 @@ enumError exec_move ( SuperFile_t * fi, Iterator_t * it )
 			}
 			else
 			    dest = fo.f.fname;
-			File_t * f = fi->f.split_f[i];
+			WFile_t * f = fi->f.split_f[i];
 			DASSERT(f);
 			PRINT("rename %s -> %s\n",f->fname,dest);
 			stat = rename(f->fname,dest);
 			if ( stat && opt_mkdir )
 			{
-			    CreatePath(dest);
+			    CreatePath(dest,false);
 			    stat = rename(f->fname,dest);
 			}
 		    }
@@ -3538,7 +3567,7 @@ enumError exec_move ( SuperFile_t * fi, Iterator_t * it )
 		    stat = rename(fi->f.fname,fo.f.fname);
 		    if ( stat && opt_mkdir )
 		    {
-			CreatePath(fo.f.fname);
+			CreatePath(fo.f.fname,false);
 			stat = rename(fi->f.fname,fo.f.fname);
 		    }
 		}
@@ -3860,7 +3889,7 @@ enumError CheckOptions ( int argc, char ** argv, bool is_env )
       if ( opt_stat == -1 )
 	break;
 
-      RegisterOptionByName(&InfoUI,opt_stat,1,is_env);
+      RegisterOptionByName(&InfoUI_wit,opt_stat,1,is_env);
 
       switch ((enumGetOpt)opt_stat)
       {
@@ -3876,6 +3905,9 @@ enumError CheckOptions ( int argc, char ** argv, bool is_env )
 	case GO_SCAN_PROGRESS:	scan_progress++; break;
 	case GO_LOGGING:	logging++; break;
 	case GO_ESC:		err += ScanEscapeChar(optarg) < 0; break;
+	case GO_COLOR:		err += ScanOptColorize(0,optarg,0); break;
+	case GO_COLOR_256:	opt_colorize = COLMD_256_COLORS; break;
+	case GO_NO_COLOR:	opt_colorize = -1; break;
 	case GO_IO:		ScanIOMode(optarg); break;
 	case GO_FORCE:		opt_force++; break;
 	case GO_DIRECT:		opt_direct++; break;
@@ -4068,9 +4100,10 @@ enumError CheckOptions ( int argc, char ** argv, bool is_env )
     NormalizeIdOptions();
     if ( OptionUsed[OPT_NO_HEADER] )
 	opt_show_mode &= ~SHOW_F_HEAD;
+    SetupColors();
 
  #ifdef DEBUG
-    DumpUsedOptions(&InfoUI,TRACE_FILE,11);
+    DumpUsedOptions(&InfoUI_wit,TRACE_FILE,11);
  #endif
 
     if ( verbose > 3 && !is_env )
@@ -4104,17 +4137,39 @@ enumError CheckCommand ( int argc, char ** argv )
     }
 
     int cmd_stat;
-    const CommandTab_t * cmd_ct = ScanCommand(&cmd_stat,argv[optind],CommandTab);
+    ccp arg = argv[optind];
+    const KeywordTab_t * cmd_ct = ScanKeyword(&cmd_stat,arg,CommandTab);
+    if ( !cmd_ct && cmd_stat < 2 && toupper((int)*arg) == 'C' )
+    {
+	if ( arg[1] == '-' )
+	{
+	    arg += 2;
+	    cmd_ct = ScanKeyword(&cmd_stat,arg,CommandTab);
+	}
+	else
+	{
+	    int cmd_stat2;
+	    cmd_ct = ScanKeyword(&cmd_stat2,arg+1,CommandTab);
+	}
+
+	if (cmd_ct)
+	{
+	    if (!opt_colorize)
+		opt_colorize = COLMD_ON;
+	    SetupColors();
+	}
+    }
+
     if (!cmd_ct)
     {
-	PrintCommandError(CommandTab,argv[optind],cmd_stat,0);
+	PrintKeywordError(CommandTab,argv[optind],cmd_stat,0,0);
 	hint_exit(ERR_SYNTAX);
     }
 
     TRACE("COMMAND FOUND: #%lld = %s\n",(u64)cmd_ct->id,cmd_ct->name1);
     current_command = cmd_ct;
 
-    enumError err = VerifySpecificOptions(&InfoUI,cmd_ct);
+    enumError err = VerifySpecificOptions(&InfoUI_wit,cmd_ct);
     if (err)
 	hint_exit(err);
 
@@ -4131,7 +4186,8 @@ enumError CheckCommand ( int argc, char ** argv )
     switch ((enumCommands)cmd_ct->id)
     {
 	case CMD_VERSION:	version_exit();
-	case CMD_HELP:		PrintHelp(&InfoUI,stdout,0,"HELP",0); break;
+	case CMD_HELP:		PrintHelp(&InfoUI_wit,stdout,0,"HELP",0,URI_HOME,
+					first_param ? first_param->arg : 0 ); break;
 	case CMD_INFO:		err = cmd_info(); break;
 	case CMD_TEST:		err = cmd_test(); break;
 	case CMD_ERROR:		err = cmd_error(); break;
@@ -4187,7 +4243,7 @@ enumError CheckCommand ( int argc, char ** argv )
 	    help_exit(false);
     }
 
-    return PrintErrorStat(err,cmd_ct->name1);
+    return PrintErrorStatWit(err,cmd_ct->name1);
 }
 
 //

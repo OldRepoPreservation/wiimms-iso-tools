@@ -40,10 +40,10 @@
  ***************************************************************************/
 
 
-#ifndef WIT_UI_WWT_H
-#define WIT_UI_WWT_H
-#include "lib-std.h"
-#include "ui.h"
+#ifndef SZS_UI_WWT_H
+#define SZS_UI_WWT_H
+#include "dclib-basics.h"
+#include "dclib-ui.h"
 
 //
 ///////////////////////////////////////////////////////////////////////////////
@@ -180,6 +180,9 @@ typedef enum enumOptions
 	OPT_SCAN_PROGRESS,
 	OPT_LOGGING,
 	OPT_ESC,
+	OPT_COLOR,
+	OPT_COLOR_256,
+	OPT_NO_COLOR,
 	OPT_IO,
 	OPT_DIRECT,
 	OPT_TITLES,
@@ -194,7 +197,7 @@ typedef enum enumOptions
 	OPT_ALIGN_WDF,
 	OPT_GCZ_BLOCK,
 
-	OPT__N_TOTAL // == 133
+	OPT__N_TOTAL // == 136
 
 } enumOptions;
 
@@ -777,6 +780,9 @@ typedef enum enumGetOpt
 	GO_XHELP		= 0x80,
 	GO_WIDTH,
 	GO_SCAN_PROGRESS,
+	GO_COLOR,
+	GO_COLOR_256,
+	GO_NO_COLOR,
 	GO_IO,
 	GO_DIRECT,
 	GO_UTF_8,
@@ -874,19 +880,19 @@ typedef enum enumGetOpt
 ///////////////                  external vars                  ///////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-extern const InfoOption_t OptionInfo[OPT__N_TOTAL+1];
-extern const CommandTab_t CommandTab[];
-extern const char OptionShort[];
-extern const struct option OptionLong[];
-extern u8 OptionUsed[OPT__N_TOTAL+1];
-extern const u8 OptionIndex[OPT_INDEX_SIZE];
-extern const InfoCommand_t CommandInfo[CMD__N+1];
-extern const InfoUI_t InfoUI;
+//extern const InfoOption_t OptionInfo[OPT__N_TOTAL+1];
+//extern const KeywordTab_t CommandTab[];
+//extern const char OptionShort[];
+//extern const struct option OptionLong[];
+//extern u8 OptionUsed[OPT__N_TOTAL+1];
+//extern const u8 OptionIndex[UIOPT_INDEX_SIZE];
+//extern const InfoCommand_t CommandInfo[CMD__N+1];
+extern const InfoUI_t InfoUI_wwt;
 
 //
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////                       END                       ///////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-#endif // WIT_UI_WWT_H
+#endif // SZS_UI_WWT_H
 

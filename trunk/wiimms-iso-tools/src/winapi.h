@@ -37,7 +37,7 @@
 #ifndef WIT_WINAPI_H
 #define WIT_WINAPI_H 1
 
-#include "types.h"
+#include "dclib/dclib-types.h"
 
 //
 ///////////////////////////////////////////////////////////////////////////////
