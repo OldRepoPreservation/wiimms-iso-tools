@@ -40,10 +40,10 @@
  ***************************************************************************/
 
 
-#ifndef WIT_UI_WDF_H
-#define WIT_UI_WDF_H
-#include "lib-std.h"
-#include "ui.h"
+#ifndef SZS_UI_WDF_H
+#define SZS_UI_WDF_H
+#include "dclib-basics.h"
+#include "dclib-ui.h"
 
 //
 ///////////////////////////////////////////////////////////////////////////////
@@ -97,6 +97,9 @@ typedef enum enumOptions
 	OPT_QUIET,
 	OPT_VERBOSE,
 	OPT_LOGGING,
+	OPT_COLOR,
+	OPT_COLOR_256,
+	OPT_NO_COLOR,
 	OPT_IO,
 	OPT_DIRECT,
 	OPT_ALIGN_WDF,
@@ -104,7 +107,7 @@ typedef enum enumOptions
 	OPT_OLD,
 	OPT_NEW,
 
-	OPT__N_TOTAL // == 43
+	OPT__N_TOTAL // == 46
 
 } enumOptions;
 
@@ -258,6 +261,9 @@ typedef enum enumGetOpt
 
 	GO_XHELP		= 0x80,
 	GO_WIDTH,
+	GO_COLOR,
+	GO_COLOR_256,
+	GO_NO_COLOR,
 	GO_IO,
 	GO_DIRECT,
 	GO_CHUNK,
@@ -287,19 +293,19 @@ typedef enum enumGetOpt
 ///////////////                  external vars                  ///////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-extern const InfoOption_t OptionInfo[OPT__N_TOTAL+1];
-extern const CommandTab_t CommandTab[];
-extern const char OptionShort[];
-extern const struct option OptionLong[];
-extern u8 OptionUsed[OPT__N_TOTAL+1];
-extern const u8 OptionIndex[OPT_INDEX_SIZE];
-extern const InfoCommand_t CommandInfo[CMD__N+1];
-extern const InfoUI_t InfoUI;
+//extern const InfoOption_t OptionInfo[OPT__N_TOTAL+1];
+//extern const KeywordTab_t CommandTab[];
+//extern const char OptionShort[];
+//extern const struct option OptionLong[];
+//extern u8 OptionUsed[OPT__N_TOTAL+1];
+//extern const u8 OptionIndex[UIOPT_INDEX_SIZE];
+//extern const InfoCommand_t CommandInfo[CMD__N+1];
+extern const InfoUI_t InfoUI_wdf;
 
 //
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////                       END                       ///////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-#endif // WIT_UI_WDF_H
+#endif // SZS_UI_WDF_H
 

@@ -47,47 +47,47 @@
 ///////////////                  OptionInfo[]                   ///////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-const InfoOption_t OptionInfo[OPT__N_TOTAL+1] =
+static const InfoOption_t OptionInfo[OPT__N_TOTAL+1] =
 {
-    {0,0,0,0,0}, // OPT_NONE,
+    {0,0,0,0,0,0,0,0}, // OPT_NONE,
 
-    {	OPT_VERSION, 'V', "version",
+    {	OPT_VERSION, false, false, false, false, 'V', "version",
 	0,
 	"Stop parsing the command line, print a version info and exit."
     },
 
-    {	OPT_HELP, 'h', "help",
+    {	OPT_HELP, false, false, false, false, 'h', "help",
 	0,
 	"Stop parsing the command line, print a help message and exit."
     },
 
-    {	OPT_XHELP, 0, "xhelp",
+    {	OPT_XHELP, false, false, false, false, 0, "xhelp",
 	0,
 	"Same as --help."
     },
 
-    {	OPT_HELP_FUSE, 'H', "help-fuse",
+    {	OPT_HELP_FUSE, false, false, false, false, 'H', "help-fuse",
 	0,
 	"Stop parsing the command line and print a FUSE help message."
     },
 
-    {	OPT_WIDTH, 0, "width",
+    {	OPT_WIDTH, false, false, false, false, 0, "width",
 	"width",
 	"Define the width (number of columns) for help and some other messages"
 	" and disable the automatic detection of the terminal width."
     },
 
-    {	OPT_QUIET, 'q', "quiet",
+    {	OPT_QUIET, false, false, false, false, 'q', "quiet",
 	0,
 	"Be quiet and print only error messages."
     },
 
-    {	OPT_VERBOSE, 'v', "verbose",
+    {	OPT_VERBOSE, true, false, false, false, 'v', "verbose",
 	0,
 	"Be verbose and print more progress information."
     },
 
-    {	OPT_IO, 0, "io",
+    {	OPT_IO, true, false, false, false, 0, "io",
 	"flags",
 	"Setup the IO mode for experiments. The standard file IO is based on"
 	" open() function. The value '1' defines that WBFS IO is based on"
@@ -95,49 +95,49 @@ const InfoOption_t OptionInfo[OPT__N_TOTAL+1] =
 	" value '4' for WIA files. You can combine the values by adding them."
     },
 
-    {	OPT_PARAM, 'p', "param",
+    {	OPT_PARAM, false, false, false, true, 'p', "param",
 	"param",
 	"The parameter is forwarded to the FUSE command line scanner."
     },
 
-    {	OPT_OPTION, 'o', "option",
+    {	OPT_OPTION, false, false, false, false, 'o', "option",
 	"param",
 	"This option is forwarded to FUSE command line scanner as '-o param'."
     },
 
-    {	OPT_ALLOW_OTHER, 'O', "allow-other",
+    {	OPT_ALLOW_OTHER, false, false, false, false, 'O', "allow-other",
 	0,
 	"This option is a short cut for '-o allow_other'. It enables"
 	" re-exporting of the mounted file system for example by a samba"
 	" server."
     },
 
-    {	OPT_CREATE, 'c', "create",
+    {	OPT_CREATE, false, false, false, false, 'c', "create",
 	0,
 	"If the mount point does not exist, create it and remove it on"
 	" unmount."
     },
 
-    {	OPT_REMOUNT, 'r', "remount",
+    {	OPT_REMOUNT, false, false, false, false, 'r', "remount",
 	0,
 	"If the mount point is already mounted, try silently to unmount it"
 	" first."
     },
 
-    {	OPT_UMOUNT, 'u', "umount",
+    {	OPT_UMOUNT, false, false, false, true, 'u', "umount",
 	0,
 	"Enter 'unmount mode' and unmount each entered directory by calling"
 	" 'fusermount -u mountdir' or alternatively 'umount mountdir'."
     },
 
-    {	OPT_LAZY, 'l', "lazy",
+    {	OPT_LAZY, false, false, false, false, 'l', "lazy",
 	0,
 	"Lazy unmount: Detach the mounted file system from the file system"
 	" hierarchy now, and cleanup all references to the file system as soon"
 	" as it is not busy anymore."
     },
 
-    {0,0,0,0,0} // OPT__N_TOTAL == 16
+    {0,0,0,0,0,0,0,0} // OPT__N_TOTAL == 16
 
 };
 
@@ -146,9 +146,9 @@ const InfoOption_t OptionInfo[OPT__N_TOTAL+1] =
 ///////////////            OptionShort & OptionLong             ///////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-const char OptionShort[] = "VhHqvp:o:Ocrul";
+static const char OptionShort[] = "VhHqvp:o:Ocrul";
 
-const struct option OptionLong[] =
+static const struct option OptionLong[] =
 {
 	{ "version",		0, 0, 'V' },
 	{ "help",		0, 0, 'h' },
@@ -177,9 +177,9 @@ const struct option OptionLong[] =
 ///////////////            OptionUsed & OptionIndex             ///////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-u8 OptionUsed[OPT__N_TOTAL+1] = {0};
+static u8 OptionUsed[OPT__N_TOTAL+1] = {0};
 
-const u8 OptionIndex[OPT_INDEX_SIZE] = 
+static const u8 OptionIndex[UIOPT_INDEX_SIZE] = 
 {
 	/* 0x00   */	 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
 	/* 0x10   */	 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
@@ -224,7 +224,7 @@ const u8 OptionIndex[OPT_INDEX_SIZE] =
 ///////////////                 InfoOption tabs                 ///////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-const InfoOption_t * option_tab_tool[] =
+static const InfoOption_t * option_tab_tool[] =
 {
 	OptionInfo + OPT_VERSION,
 	OptionInfo + OPT_HELP,
@@ -255,9 +255,10 @@ const InfoOption_t * option_tab_tool[] =
 ///////////////                   InfoCommand                   ///////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-const InfoCommand_t CommandInfo[CMD__N+1] =
+static const InfoCommand_t CommandInfo[CMD__N+1] =
 {
     {	0,
+	false,
 	false,
 	false,
 	"wfuse",
@@ -267,12 +268,13 @@ const InfoCommand_t CommandInfo[CMD__N+1] =
 	"Mount a Wii or GameCube image or a WBFS file or partition to a mount"
 	" point using FUSE (Filesystem in USErspace). Use 'wfuse --umount"
 	" mountdir' for unmounting.",
+	0,
 	13,
 	option_tab_tool,
 	0
     },
 
-    {0,0,0,0,0,0,0,0,0}
+    {0,0,0,0,0,0,0,0,0,00,}
 };
 
 //
@@ -280,7 +282,7 @@ const InfoCommand_t CommandInfo[CMD__N+1] =
 ///////////////                     InfoUI                      ///////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-const InfoUI_t InfoUI =
+const InfoUI_t InfoUI_wfuse =
 {
 	"wfuse",
 	0, // n_cmd

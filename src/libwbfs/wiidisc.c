@@ -547,6 +547,8 @@ char * wd_print_id
 					// If NULL, a local circulary static buffer is used
 )
 {
+    DASSERT(id);
+
     if (!buf)
 	buf = GetCircBuf( id_len + 1);
 
@@ -560,6 +562,40 @@ char * wd_print_id
     *dest = 0;
 
     return buf;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// returns a pointer to a printable ID with colors, teminated with 0
+
+char * wd_print_id_col
+(
+    const void		* id,		// NULL | EMPTY | ID to convert
+    size_t		id_len,		// len of 'id'
+    const void		* ref_id,	// reference ID
+    const ColorSet_t	*colset		// NULL or color set
+)
+{
+    if ( !id || !*(u8*)id )
+	return "  --";
+
+    if ( !ref_id || !memcmp(id,ref_id,id_len) || !colset || !colset->colorize )
+	return wd_print_id(id,id_len,0);
+
+    char buf[100];
+    char *dest = StringCopyS(buf,sizeof(buf)-id_len,colset->highlight);
+
+    ccp src = id;
+    while ( id_len-- > 0 )
+    {
+	const char ch = *src++;
+	*dest++ = ch >= ' ' && ch < 0x7f ? ch : '.';
+    }
+    dest = StringCopyE(dest,buf+sizeof(buf),colset->reset);
+
+    const uint len = dest - buf + 1;
+    char *res = GetCircBuf(len);
+    memcpy(res,buf,len);
+    return res;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1812,7 +1848,7 @@ uint wd_disc_is_encrypted
     //    0: no partition is encrypted
     //    N: some (=N) partitions are encrypted, but not all
     // 1000: all partitions are encrypted
-    
+
     wd_disc_t		* disc		// disc to check, valid
 )
 {
@@ -3597,7 +3633,9 @@ static int wd_iterate_fst_helper
 
 	    DASSERT( it->icm == WD_ICM_FILE );
 	    it->off4 = sys_files->boot.fst_off4;
-	    it->size = sys_files->boot.fst_size4 << 2;
+	    it->size = sys_files->boot.fst_size4;
+	    if (!is_gc)
+		it->size <<= 2;
 	    DASSERT(!it->data);
 	    strcpy(it->fst_name,"sys/fst.bin");
 	    stat = func(it);
@@ -4351,14 +4389,18 @@ int wd_select_part_files
 	if ( utab[sector] == usage_id )
 	    utab[sector] = WD_USAGE_UNUSED; 
 
+
     //----- mark needed system files
 
     wd_mark_part( part, WII_BOOT_OFF>>2, WII_BOOT_SIZE );	// boot.bin
     wd_mark_part( part, WII_BI2_OFF>>2, WII_BI2_SIZE );		// bi2.bin
     wd_mark_part( part, WII_APL_OFF>>2, part->apl_size );	// apploader.img
     wd_mark_part( part, part->boot.dol_off4, part->dol_size );	// main.dol
-    wd_mark_part( part, part->boot.fst_off4,
-			part->boot.fst_size4 << 2 );		// fst.bin
+
+    u32 fst_size = part->boot.fst_size4;
+    if (!part->is_gc)
+	fst_size <<= 2;
+    wd_mark_part( part, part->boot.fst_off4, fst_size );	// fst.bin
 
 
     //----- call iterator for files/...

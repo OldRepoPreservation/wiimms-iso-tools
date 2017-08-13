@@ -37,7 +37,7 @@
 #ifndef WIT_LIB_WIA_H
 #define WIT_LIB_WIA_H 1
 
-#include "types.h"
+#include "dclib/dclib-types.h"
 #include "lib-std.h"
 #include "libwbfs/wiidisc.h"
 

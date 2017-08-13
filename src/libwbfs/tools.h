@@ -37,6 +37,9 @@
 #ifndef TOOLS_H
 #define TOOLS_H
 
+#include "dclib/dclib-types.h"
+#include "dclib/dclib-basics.h"
+
 //
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////			    setup			///////////////
@@ -44,46 +47,6 @@
 
 #include "libwbfs_os.h"		// os dependent definitions
 #include "libwbfs_defaults.h"	// default settings
-
-//
-///////////////////////////////////////////////////////////////////////////////
-///////////////			  constants			///////////////
-///////////////////////////////////////////////////////////////////////////////
-
-#define KB_SI 1000
-#define MB_SI (1000*1000)
-#define GB_SI (1000*1000*1000)
-#define TB_SI (1000ull*1000*1000*1000)
-#define PB_SI (1000ull*1000*1000*1000*1000)
-#define EB_SI (1000ull*1000*1000*1000*1000*1000)
-
-#define KiB 1024
-#define MiB (1024*1024)
-#define GiB (1024*1024*1024)
-#define TiB (1024ull*1024*1024*1024)
-#define PiB (1024ull*1024*1024*1024*1024)
-#define EiB (1024ull*1024*1024*1024*1024*1024)
-
-//
-///////////////////////////////////////////////////////////////////////////////
-///////////////		low level endian conversions		///////////////
-///////////////////////////////////////////////////////////////////////////////
-
-// convert big endian data to a number in host format
-u16 be16 ( const void * be_data_ptr );
-u32 be24 ( const void * be_data_ptr );
-u32 be32 ( const void * be_data_ptr );
-u64 be64 ( const void * be_data_ptr );
-
-// convert little endian data to a number in host format
-u16 le16 ( const void * le_data_ptr );
-u32 le24 ( const void * le_data_ptr );
-u32 le32 ( const void * le_data_ptr );
-u64 le64 ( const void * le_data_ptr );
-
-// convert u64 from/to network byte order
-be64_t hton64 ( u64    data );
-u64    ntoh64 ( be64_t data );
 
 //
 ///////////////////////////////////////////////////////////////////////////////
@@ -259,55 +222,6 @@ void wd_print_byte_tab
     u32			addr_factor,	// each 'tab' element represents 'addr_factor' bytes
     const char		chartab[256],	// valid pointer to a char table
     bool		print_all	// false: ignore const lines
-);
-
-//-----------------------------------------------------------------------------
-
-char * GetCircBuf // never returns NULL
-(
-    u32		buf_size	// wanted buffer size
-);
-
-//
-///////////////////////////////////////////////////////////////////////////////
-///////////////			string helpers			///////////////
-///////////////////////////////////////////////////////////////////////////////
-
-extern const char EmptyString[]; // ""
-extern const char MinusString[]; // "-"
-
-//-----
-
-// frees string if str is not EmptyString|MinusString
-void FreeString ( ccp str );
-
-//-----
-
-// StringCopy(), StringCopyE(), StringCat*()
-//	RESULT: end of copied string pointing to NULL.
-//	'src*' may be a NULL pointer.
-
-char * StringCopyS ( char * buf, size_t bufsize, ccp src );
-char * StringCat2S ( char * buf, size_t bufsize, ccp src1, ccp src2 );
-char * StringCat3S ( char * buf, size_t bufsize, ccp src1, ccp src2, ccp src3 );
-
-char * StringCopyE ( char * buf, ccp buf_end, ccp src );
-char * StringCat2E ( char * buf, ccp buf_end, ccp src1, ccp src2 );
-char * StringCat3E ( char * buf, ccp buf_end, ccp src1, ccp src2, ccp src3 );
-
-//-----
-
-//-----------------------------------------------------
-// Format of version number: AABBCCDD = A.BB | A.BB.CC
-// If D != 0x00 && D != 0xff => append: 'beta' D
-//-----------------------------------------------------
-
-char * PrintVersion
-(
-    char		* buf,		// result buffer
-					// If NULL, a local circulary static buffer is used
-    size_t		buf_size,	// size of 'buf', ignored if buf==NULL
-    u32			version		// version number to print
 );
 
 //

@@ -37,7 +37,7 @@
 #ifndef WIT_LIB_WDF_H
 #define WIT_LIB_WDF_H 1
 
-#include "types.h"
+#include "dclib/dclib-types.h"
 #include "lib-std.h"
 
 //
@@ -74,6 +74,7 @@ typedef u32 WDF_Hole_t;
 ///////////////////////////////////////////////////////////////////////////////
 // This is the header of a WDF v1.
 // Remember: Within a file the data is stored in network byte order (big endian)
+// [[wdf_header_t]]
 
 typedef struct wdf_header_t
 {
@@ -123,6 +124,7 @@ __attribute__ ((packed)) wdf_header_t;
 ///////////////////////////////////////////////////////////////////////////////
 // This is the chunk info of WDF.
 // Remember: Within a file the data is stored in network byte order (big endian)
+// [[wdf1_chunk_t]]
 
 typedef struct wdf1_chunk_t
 {
@@ -136,6 +138,7 @@ typedef struct wdf1_chunk_t
 } __attribute__ ((packed)) wdf1_chunk_t;
 
 //-----------------------------------------------------------------------------
+// [[wdf2_chunk_t]]
 
 typedef struct wdf2_chunk_t
 {
@@ -212,6 +215,7 @@ void ConvertToHostWC
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////		    struct wdf_controller_t		///////////////
 ///////////////////////////////////////////////////////////////////////////////
+// [[wdf_controller_t]]
 
 typedef struct wdf_controller_t
 {

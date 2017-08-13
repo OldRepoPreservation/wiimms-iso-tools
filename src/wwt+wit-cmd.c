@@ -55,7 +55,7 @@ enumError cmd_error()
 	    int i;
 	    for ( i=0; i<ERR__N; i++ )
 		printf("\n[error-%02u]\ncode=%u\nname=%s\ntext=%s\n",
-			i, i, GetErrorName(i), GetErrorText(i));
+			i, i, GetErrorName(i,"?"), GetErrorText(i,"?") );
 	}
 	else
 	{
@@ -72,14 +72,15 @@ enumError cmd_error()
 	    int max_wd = 0;
 	    for ( i=0; i<ERR__N; i++ )
 	    {
-		const int len = strlen(GetErrorName(i));
+		const int len = strlen(GetErrorName(i,"?"));
 		if ( max_wd < len )
 		    max_wd = len;
 	    }
 
 	    // print table
 	    for ( i=0; i<ERR__N; i++ )
-		printf("%3d : %-*s : %s\n",i,max_wd,GetErrorName(i),GetErrorText(i));
+		printf("%3d : %-*s : %s\n",
+			i, max_wd,GetErrorName(i,"?"), GetErrorText(i,"?") );
 
 	    if (print_header)
 		printf("\n");
@@ -101,11 +102,11 @@ enumError cmd_error()
 
     if (print_sections)
 	printf("\n[error]\ncode=%lu\nname=%s\ntext=%s\n",
-		num, GetErrorName(num), GetErrorText(num));
+		num, GetErrorName(num,"?"), GetErrorText(num,"?"));
     else if (long_count)
-	printf("%s\n",GetErrorText(num));
+	printf("%s\n",GetErrorText(num,"?"));
     else
-	printf("%s\n",GetErrorName(num));
+	printf("%s\n",GetErrorName(num,"?"));
     return stat;
 }
 
@@ -336,7 +337,7 @@ enum
 
 //-----------------------------------------------------------------------------
 
-static const CommandTab_t feature_tab[] =
+static const KeywordTab_t feature_tab[] =
 {
     //--- image formats
 
@@ -391,7 +392,7 @@ static bool check_feature ( uint feat )
 
     if ( msg && verbose >= 0 && ( verbose > 0 || stat ))
     {
-	const CommandTab_t *cmd;
+	const KeywordTab_t *cmd;
 	for ( cmd = feature_tab; cmd->name1; cmd++ )
 	if ( cmd->id == feat )
 	{
@@ -434,7 +435,7 @@ enumError cmd_features()
 	    continue;
 
 	int cmd_stat;
-	const CommandTab_t * cmd = ScanCommand(&cmd_stat,arg,feature_tab);
+	const KeywordTab_t * cmd = ScanKeyword(&cmd_stat,arg,feature_tab);
 	if ( !cmd || cmd_stat )
 	{
 	    n_total++;
@@ -688,17 +689,18 @@ enumError cmd_test_options()
 
 //
 ///////////////////////////////////////////////////////////////////////////////
-///////////////			PrintErrorStat()		///////////////
+///////////////			PrintErrorStatWit()		///////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-enumError PrintErrorStat ( enumError err, ccp cmdname )
+enumError PrintErrorStatWit ( enumError err, ccp cmdname )
 {
     if ( print_sections )
     {
 	putchar('\n');
 	if ( err )
 	    printf("[error]\nprogram=%s\ncommand=%s\ncode=%u\nname=%s\ntext=%s\n\n",
-			progname, cmdname, err, GetErrorName(err), GetErrorText(err) );
+			progname, cmdname, err,
+			GetErrorName(err,"?"), GetErrorText(err,"?") );
     }
 
     if (   verbose > 0 && err >= ERR_WARNING
@@ -706,7 +708,7 @@ enumError PrintErrorStat ( enumError err, ccp cmdname )
 	|| err == ERR_NOT_IMPLEMENTED )
     {
 	fprintf(stderr,"%s: Command '%s' returns with status #%d [%s]\n",
-			progname, cmdname, err, GetErrorName(err) );
+			progname, cmdname, err, GetErrorName(err,"?") );
     }
 
     return err;
@@ -829,7 +831,7 @@ enum
 
 enumError cmd_info()
 {
-    static const CommandTab_t cmdtab[] =
+    static const KeywordTab_t cmdtab[] =
     {
 	{ INFO__ALL,		"ALL",			0,			0 },
 	{ INFO_IMAGE_FORMAT,	"IMAGE-FORMATS",	"IMAGEFORMATS",		0 },
@@ -846,7 +848,7 @@ enumError cmd_info()
 	if ( !arg || !*arg )
 	    continue;
 
-	const CommandTab_t * cmd = ScanCommand(0,arg,cmdtab);
+	const KeywordTab_t * cmd = ScanKeyword(0,arg,cmdtab);
 	if (!cmd)
 	    return ERROR0(ERR_SYNTAX,"Unknown keyword: %s\n",arg);
 
@@ -861,7 +863,7 @@ enumError cmd_info()
 	printf("\n[INFO]\n");
 
 	ccp text = "infos-avail=";
-	const CommandTab_t * cptr;
+	const KeywordTab_t * cptr;
 	for ( cptr = cmdtab + 1; cptr->name1; cptr++ )
 	{
 	    printf("%s%s",text,cptr->name1);

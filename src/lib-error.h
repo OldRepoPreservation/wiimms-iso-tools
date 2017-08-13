@@ -42,101 +42,40 @@
 ///////////////                  error messages                 ///////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-typedef enum enumError
-{
-	ERR_OK,
-	ERR_DIFFER,
-	ERR_NOTHING_TO_DO,
-	ERR_NO_SOURCE_FOUND,
-	ERR_JOB_IGNORED,
-	ERR_WARNING,	// separator: below = real errors and not warnings
+//--- error group 1
 
-	ERR_INVALID_FILE,
-	ERR_INVALID_VERSION,
+#define ERR_NO_WDF		ERU_ERROR1_00
+#define ERR_WDF_VERSION		ERU_ERROR1_01
+#define ERR_WDF_SPLIT		ERU_ERROR1_02
+#define ERR_WDF_INVALID		ERU_ERROR1_03
 
-	ERR_NO_WDF,
-	ERR_WDF_VERSION,
-	ERR_WDF_SPLIT,
-	ERR_WDF_INVALID,
+#define ERR_NO_CISO		ERU_ERROR1_04
+#define ERR_CISO_INVALID	ERU_ERROR1_05
 
-	ERR_NO_CISO,
-	ERR_CISO_INVALID,
+#define ERR_NO_GCZ		ERU_ERROR1_06
+#define ERR_GCZ_INVALID		ERU_ERROR1_07
 
-	ERR_NO_GCZ,
-	ERR_GCZ_INVALID,
+#define ERR_WPART_INVALID	ERU_ERROR1_08
+#define ERR_WDISC_INVALID	ERU_ERROR1_09
+#define ERR_WDISC_NOT_FOUND	ERU_ERROR1_10
 
-	ERR_WPART_INVALID,
-	ERR_WDISC_INVALID,
-	ERR_WDISC_NOT_FOUND,
+#define ERR_NO_WBFS_FOUND	ERU_ERROR1_11
+#define ERR_TO_MUCH_WBFS_FOUND	ERU_ERROR1_12
+#define ERR_WBFS_INVALID	ERU_ERROR1_13
 
-	ERR_NO_WBFS_FOUND,
-	ERR_TO_MUCH_WBFS_FOUND,
-	ERR_WBFS_INVALID,
+#define ERR_NO_WIA		ERU_ERROR1_14
+#define ERR_WIA_INVALID		ERU_ERROR1_15
+#define ERR_BZIP2		ERU_ERROR1_16
+#define ERR_LZMA		ERU_ERROR1_17
 
-	ERR_NO_WIA,
-	ERR_WIA_INVALID,
-	ERR_BZIP2,
-	ERR_LZMA,
+//--- error group 2
 
-	ERR_ALREADY_EXISTS,
-	ERR_CANT_OPEN,
-	ERR_CANT_CREATE,
-	ERR_CANT_CREATE_DIR,
-	ERR_WRONG_FILE_TYPE,
-	ERR_READ_FAILED,
-	ERR_REMOVE_FAILED,
-	ERR_WRITE_FAILED,
+#define ERR_WBFS		ERU_ERROR2_00
 
-	ERR_WBFS,
+//-----------------------------------------------------------------------------
 
-	ERR_MISSING_PARAM,
-	ERR_SEMANTIC,
-	ERR_SYNTAX,
-
-	ERR_INTERRUPT,
-
-	ERR_ERROR,	// separator: below = hard/fatal errors => exit
-
-	ERR_NOT_IMPLEMENTED,
-	ERR_INTERNAL,
-	ERR_OUT_OF_MEMORY,
-	ERR_FATAL,
-
-	ERR__N
-
-} enumError;
-
-//
-///////////////////////////////////////////////////////////////////////////////
-///////////////                  error interface                ///////////////
-///////////////////////////////////////////////////////////////////////////////
-
-extern enumError last_error;
-extern enumError max_error;
-extern u32 error_count;
-
-///////////////////////////////////////////////////////////////////////////////
-
-const char * GetErrorName ( int stat );
-const char * GetErrorText ( int stat );
-int PrintError ( const char * func, const char * file, unsigned int line,
-		int syserr, enumError err_code, const char * format, ... )
-		__attribute__ ((__format__(__printf__,6,7)));
-
-#define OUT_OF_MEMORY PrintError(__FUNCTION__,__FILE__,__LINE__,0,ERR_OUT_OF_MEMORY,0)
-
-#define ERROR(se,code,...) PrintError(__FUNCTION__,__FILE__,__LINE__,se,code,__VA_ARGS__)
-#define ERROR0(code,...) PrintError(__FUNCTION__,__FILE__,__LINE__,0,code,__VA_ARGS__)
-#define ERROR1(code,...) PrintError(__FUNCTION__,__FILE__,__LINE__,errno,code,__VA_ARGS__)
-
-#define WD_ERROR ERROR0
-
-///////////////////////////////////////////////////////////////////////////////
-
-void HexDump ( FILE * f, int indent, u64 addr, int addr_fw, int row_len,
-		const void * data, size_t count );
-void HexDump16 ( FILE * f, int indent, u64 addr,
-		const void * data, size_t count );
+ccp LibGetErrorName ( int stat, ccp ret_not_found );
+ccp LibGetErrorText ( int stat, ccp ret_not_found );
 
 //
 ///////////////////////////////////////////////////////////////////////////////

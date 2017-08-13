@@ -37,7 +37,7 @@
 #ifndef WIT_ISO_INTERFACE_H
 #define WIT_ISO_INTERFACE_H 1
 
-#include "types.h"
+#include "dclib/dclib-types.h"
 #include "lib-sf.h"
 #include "patch.h"
 #include "dclib-utf8.h"
@@ -668,7 +668,7 @@ typedef struct WiiFstInfo_t
 	bool		link_image;		// true: try 'link' before 'copy'
 	int		verbose;		// the verbosity level
 
-	ParamField_t	align_info;		// store align infos here
+	WiiParamField_t	align_info;		// store align infos here
 
 } WiiFstInfo_t;
 

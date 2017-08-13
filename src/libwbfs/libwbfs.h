@@ -130,6 +130,8 @@ typedef enum wbfs_balloc_mode_t // block allocation mode
 
 //-----------------------------------------------------------------------------
 
+typedef char id6_t[7];
+
 typedef struct wbfs_t
 {
     wbfs_head_t	* head;

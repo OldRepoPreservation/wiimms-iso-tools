@@ -46,6 +46,10 @@
 #include <errno.h>
 #include <fcntl.h>
 
+#if defined(TEST) && !defined(__APPLE__) && !defined(__CYGWIN__)
+  #include <mcheck.h>
+#endif
+
 #if defined(__CYGWIN__)
   #include <cygwin/fs.h>
   #include <io.h>
@@ -72,7 +76,6 @@
 
 enumProgID	prog_id			= PROG_UNKNOWN;
 u32		revision_id		= SYSTEMID + REVISION_NUM;
-ccp		progname		= "?";
 ccp		search_path[6]		= {0};
 ccp		lang_info		= 0;
 volatile int	SIGINT_level		= 0;
@@ -221,8 +224,44 @@ static void sig_handler ( int signum )
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void SetupColors()
+{
+    //----- setup colors
+
+    colorize_stdout = colorize_stdlog = opt_colorize; // reset it first
+    colorize_stdout = GetFileColorized(stdout);
+    colorize_stdlog = GetFileColorized(stdlog);
+
+    colout = GetColorSet(colorize_stdout>0);
+    collog = GetColorSet(colorize_stdlog>0);
+    //colset = collog;
+    SetupStdMsg();
+
+    PRINT("COLORIZE: out=%d[%zd], err=%d[%zd], log=%d[%zd], msg=%d[%zd]\n",
+	colorize_stdout, strlen(colout->reset),
+	colorize_stderr, strlen(colerr->reset),
+	colorize_stdlog, strlen(collog->reset),
+	colorize_stdmsg, strlen(colmsg->reset) );
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void SetupLib ( int argc, char ** argv, ccp p_progname, enumProgID prid )
 {
+    SetupTimezone(true);
+    GetTimerMSec();
+    SetupColors();
+
+ #if defined(TEST) && !defined(__APPLE__) && !defined(__CYGWIN__)
+    mtrace();
+ #endif
+
+    INIT_TRACE_ALLOC;
+
+    GetErrorNameHook	= LibGetErrorName;
+    GetErrorTextHook	= LibGetErrorText;
+    ScanSizeFactorHook	= ScanSizeFactorWii;
+
  #ifdef DEBUG
     if (!TRACE_FILE)
     {
@@ -285,11 +324,11 @@ void SetupLib ( int argc, char ** argv, ccp p_progname, enumProgID prid )
     TRACE_SIZEOF(CISO_Info_t);
     TRACE_SIZEOF(CheckDisc_t);
     TRACE_SIZEOF(CheckWBFS_t);
-    TRACE_SIZEOF(CommandTab_t);
+    TRACE_SIZEOF(KeywordTab_t);
     TRACE_SIZEOF(DataArea_t);
     TRACE_SIZEOF(DataList_t);
     TRACE_SIZEOF(Diff_t);
-    TRACE_SIZEOF(File_t);
+    TRACE_SIZEOF(WFile_t);
     TRACE_SIZEOF(FileAttrib_t);
     TRACE_SIZEOF(FileCache_t);
     TRACE_SIZEOF(FileIndex_t);
@@ -311,9 +350,9 @@ void SetupLib ( int argc, char ** argv, ccp p_progname, enumProgID prid )
     TRACE_SIZEOF(Iterator_t);
     TRACE_SIZEOF(MemMapItem_t);
     TRACE_SIZEOF(MemMap_t);
-    TRACE_SIZEOF(ParamField_t);
-    TRACE_SIZEOF(ParamFieldItem_t);
-    TRACE_SIZEOF(ParamFieldType_t);
+    TRACE_SIZEOF(WiiParamField_t);
+    TRACE_SIZEOF(WiiParamFieldItem_t);
+    TRACE_SIZEOF(WiiParamFieldType_t);
     TRACE_SIZEOF(ParamList_t);
     TRACE_SIZEOF(PartitionInfo_t);
     TRACE_SIZEOF(PrintTime_t);
@@ -665,85 +704,17 @@ void CloseAll()
     CloseWBFSCache();
 }
 
-///////////////////////////////////////////////////////////////////////////////
-
-enumError CheckEnvOptions ( ccp varname, check_opt_func func )
-{
-    TRACE("CheckEnvOptions(%s,%p)\n",varname,func);
-
-    ccp env = getenv(varname);
-    if ( !env || !*env )
-	return ERR_OK;
-
-    TRACE("env[%s] = %s\n",varname,env);
-
-    const int envlen = strlen(env);
-    char * buf = MALLOC(envlen+1);
-    char * dest = buf;
-
-    int argc = 1; // argv[0] = progname
-    ccp src = env;
-    while (*src)
-    {
-	while ( *src > 0 && *src <= ' ' ) // skip blanks & control
-	    src++;
-
-	if (!*src)
-	    break;
-
-	argc++;
-	while ( *(u8*)src > ' ' )
-	    *dest++ = *src++;
-	*dest++ = 0;
-	ASSERT( dest <= buf+envlen+1 );
-    }
-    TRACE("argc = %d\n",argc);
-
-    char ** argv = MALLOC((argc+1)*sizeof(*argv));
-    argv[0] = (char*)progname;
-    argv[argc] = 0;
-    dest = buf;
-    int i;
-    for ( i = 1; i < argc; i++ )
-    {
-	TRACE("argv[%d] = %s\n",i,dest);
-	argv[i] = dest;
-	while (*dest)
-	    dest++;
-	dest++;
-	ASSERT( dest <= buf+envlen+1 );
-    }
-
-    enumError stat = func(argc,argv,true);
-    if (stat)
-	fprintf(stderr,
-	    "Error while scanning the environment variable '%s'\n",varname);
-
-    // don't FREE() because is's possible that there are pointers to arguments
-    //FREE(argv);
-    //FREE(buf);
-
-    return stat;
-}
-
 //
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////			error messages			///////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-ccp GetErrorName ( int stat )
+ccp LibGetErrorName ( int stat, ccp ret_not_found )
 {
     switch(stat)
     {
-	case ERR_OK:			return "OK";
 	case ERR_DIFFER:		return "FILES DIFFER";
-	case ERR_NOTHING_TO_DO:		return "NOTHING TO DO";
 	case ERR_NO_SOURCE_FOUND:	return "NO SOURCE FOUND";
-	case ERR_JOB_IGNORED:		return "JOB IGNORED";
-	case ERR_WARNING:		return "WARNING";
-
-	case ERR_INVALID_FILE:		return "INVALID FILE";
-	case ERR_INVALID_VERSION:	return "INVALID VERSION";
 
 	case ERR_NO_WDF:		return "NO WDF";
 	case ERR_WDF_VERSION:		return "WDF VERSION NOT SUPPORTED";
@@ -769,48 +740,19 @@ ccp GetErrorName ( int stat )
 	case ERR_BZIP2:			return "BZIP2 ERROR";
 	case ERR_LZMA:			return "LZMA ERROR";
 
-	case ERR_ALREADY_EXISTS:	return "FILE ALREADY EXISTS";
-	case ERR_CANT_OPEN:		return "CAN'T OPEN FILE";
-	case ERR_CANT_CREATE:		return "CAN'T CREATE FILE";
-	case ERR_CANT_CREATE_DIR:	return "CAN'T CREATE DIRECTORY";
-	case ERR_WRONG_FILE_TYPE:	return "WRONG FILE TYPE";
-	case ERR_READ_FAILED:		return "READ FILE FAILED";
-	case ERR_REMOVE_FAILED:		return "REMOVE FILE FAILED";
-	case ERR_WRITE_FAILED:		return "WRITE FILE FAILED";
-
 	case ERR_WBFS:			return "WBFS ERROR";
-
-	case ERR_MISSING_PARAM:		return "MISSING PARAMETERS";
-	case ERR_SEMANTIC:		return "SEMANTIC ERROR";
-	case ERR_SYNTAX:		return "SYNTAX ERROR";
-
-	case ERR_INTERRUPT:		return "INTERRUPT";
-
-	case ERR_ERROR:			return "ERROR";
-
-	case ERR_NOT_IMPLEMENTED:	return "NOT IMPLEMENTED YET";
-	case ERR_INTERNAL:		return "INTERNAL ERROR";
-	case ERR_OUT_OF_MEMORY:		return "OUT OF MEMORY";
-	case ERR_FATAL:			return "FATAL ERROR";
     }
-    return "?";
+    return ret_not_found;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ccp GetErrorText ( int stat )
+ccp LibGetErrorText ( int stat, ccp ret_not_found )
 {
     switch(stat)
     {
-	case ERR_OK:			return "Ok";
 	case ERR_DIFFER:		return "Files differ";
-	case ERR_NOTHING_TO_DO:		return "Nothing to do";
 	case ERR_NO_SOURCE_FOUND:	return "No source file found";
-	case ERR_JOB_IGNORED:		return "Job ignored";
-	case ERR_WARNING:		return "Unspecific warning";
-
-	case ERR_INVALID_FILE:		return "File has invalid content";
-	case ERR_INVALID_VERSION:	return "File version not supported";
 
 	case ERR_NO_WDF:		return "File is not a WDF";
 	case ERR_WDF_VERSION:		return "WDF version not supported";
@@ -836,362 +778,14 @@ ccp GetErrorText ( int stat )
 	case ERR_BZIP2:			return "A bzip2 error occurred";
 	case ERR_LZMA:			return "A lzma error occurred";
 
-	case ERR_ALREADY_EXISTS:	return "File already exists";
-	case ERR_CANT_OPEN:		return "Can't open file";
-	case ERR_CANT_CREATE:		return "Can't create file";
-	case ERR_CANT_CREATE_DIR:	return "Can't create directory";
-	case ERR_WRONG_FILE_TYPE:	return "Wrong type of file";
-	case ERR_READ_FAILED:		return "Reading from file failed";
-	case ERR_REMOVE_FAILED:		return "Removing a file failed";
-	case ERR_WRITE_FAILED:		return "Writing to file failed";
-
 	case ERR_WBFS:			return "A WBFS error occurred";
-
-	case ERR_MISSING_PARAM:		return "Missing ate least one parameter";
-	case ERR_SEMANTIC:		return "Semantic error";
-	case ERR_SYNTAX:		return "Syntax error";
-
-	case ERR_INTERRUPT:		return "Program interrupted by user";
-
-	case ERR_ERROR:			return "Unspecific error";
-
-	case ERR_NOT_IMPLEMENTED:	return "Not implemented yet";
-	case ERR_INTERNAL:		return "Internal error";
-	case ERR_OUT_OF_MEMORY:		return "Allocation of dynamic memory failed";
-	case ERR_FATAL:			return "Unspecific fatal error";
     }
-    return "?";
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-enumError last_error = ERR_OK;
-enumError max_error  = ERR_OK;
-u32 error_count = 0;
-
-///////////////////////////////////////////////////////////////////////////////
-
-int PrintError ( ccp func, ccp file, uint line,
-		int syserr, enumError err_code, ccp format, ... )
-{
-    fflush(stdout);
-    char msg[1000];
-    const int plen = strlen(progname)+2;
-
-    if (format)
-    {
-	va_list arg;
-	va_start(arg,format);
-	vsnprintf(msg,sizeof(msg),format,arg);
-	msg[sizeof(msg)-2] = 0;
-	va_end(arg);
-
-	const int mlen = strlen(msg);
-	if ( mlen > 0 && msg[mlen-1] != '\n' )
-	{
-	    msg[mlen]   = '\n';
-	    msg[mlen+1] = 0;
-	}
-    }
-    else
-	StringCat2S(msg,sizeof(msg),GetErrorText(err_code),"\n");
-
-    ccp prefix = err_code == ERR_OK ? "" : err_code <= ERR_WARNING ? "! " : "!! ";
-    const int fw = GetTermWidth(80,40) - 1;
-
- #ifdef DEBUG
-    TRACE("%s%s #%d [%s] in %s() @ %s#%d\n",
-		prefix, err_code <= ERR_WARNING ? "WARNING" : "ERROR",
-		err_code, GetErrorName(err_code), func, file, line );
-    TRACE("%s%*s%s",prefix,plen,"",msg);
-    if (syserr)
-	TRACE("!! ERRNO=%d: %s\n",syserr,strerror(syserr));
-    fflush(TRACE_FILE);
- #endif
-
- #if defined(EXTENDED_ERRORS)
-    if ( err_code > ERR_WARNING )
- #else
-    if ( err_code >= ERR_NOT_IMPLEMENTED )
- #endif
-    {
-	if ( err_code > ERR_WARNING )
-	    fprintf(stderr,"%s%s: ERROR #%d [%s] in %s() @ %s#%d\n",
-		prefix, progname, err_code, GetErrorName(err_code), func, file, line );
-	else
-	    fprintf(stderr,"%s%s: WARNING in %s() @ %s#%d\n",
-		prefix, progname, func, file, line );
-
-     #if defined(EXTENDED_ERRORS) && EXTENDED_ERRORS > 1
-	fprintf(stderr,"%s -> %s/%s?annotate=%d#l%d\n",
-		prefix, URI_VIEWVC, file, REVISION_NEXT, line );
-     #endif
-
-	fputs(prefix,stderr);
-	PutLines(stderr,plen,fw,0,prefix,msg);
-    }
-    else
-    {
-	fprintf(stderr,"%s%s:",prefix,progname);
-	PutLines(stderr,plen,fw,strlen(progname)+1,prefix,msg);
-    }
-
-    if (syserr)
-    {
-	fprintf(stderr,"%s%*s-> ",prefix,plen,"");
-	snprintf(msg,sizeof(msg),"%s [%d]",strerror(syserr),syserr);
-	PutLines(stderr,plen+3,fw,plen+3,prefix,msg);
-    }
-    fflush(stderr);
-
-    if ( err_code > ERR_OK )
-	error_count++;
-
-    last_error = err_code;
-    if ( max_error < err_code )
-	max_error = err_code;
-
-    if ( err_code > ERR_NOT_IMPLEMENTED )
-	exit(err_code);
-
-    return err_code;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void HexDump16 ( FILE * f, int indent, u64 addr,
-		 const void * data, size_t count )
-{
-    HexDump(f,indent,addr,4,16,data,count);
-}
-
-//-----------------------------------------------------------------------------
-
-void HexDump ( FILE * f, int indent, u64 addr, int addr_fw, int row_len,
-		const void * p_data, size_t count )
-{
-    if ( !f || !p_data || !count )
-	return;
-
-    const int MAX_LEN = 256;
-    char buf[MAX_LEN+1];
-    const u8 * data = p_data;
-
-    indent = NormalizeIndent(indent);
-    addr_fw = NormalizeIndent(addr_fw);
-
-    const bool show_ascii = row_len >= 0;
-    if ( row_len < 0 )
-	row_len = -row_len;
-    else if ( row_len < 1 )
-	row_len = 16;
-    else if ( row_len > MAX_LEN )
-	row_len = MAX_LEN;
-
-
-    if ( (s64)addr != -1 )
-    {
-	const int fw = snprintf(buf,sizeof(buf),"%llx",addr+count-1);
-	if ( addr_fw < fw )
-	     addr_fw = fw;
-    }
-
-    while ( count > 0 )
-    {
-	if ( (s64)addr == -1 )
-	    fprintf(f,"%*s", indent,"" );
-	else
-	{
-	    fprintf(f,"%*s%*llx:", indent,"", addr_fw, addr );
-	    addr += row_len;
-	}
-	char * dest = buf;
-
-	int i;
-	for ( i = 0; i < row_len; i++ )
-	{
-	    u8 ch = *data++;
-	    if ( count > 0 )
-	    {
-		count--;
-		fprintf(f,"%s%02x ", i&3 ? "" : " ", ch );
-		*dest++ = ch < ' ' || ch >= 0x7f ? '.' : ch;
-	    }
-	    else
-		fprintf(f,"%s   ", i&3 ? "" : " " );
-	}
-	*dest = 0;
-	if (show_ascii)
-	    fprintf(f,":%s:\n",buf);
-	else
-	    fputc('\n',f);
-    }
-}
-
-//
-///////////////////////////////////////////////////////////////////////////////
-///////////////			terminal cap			///////////////
-///////////////////////////////////////////////////////////////////////////////
-
-u32 opt_width = 0;
-
-///////////////////////////////////////////////////////////////////////////////
-
-int ScanOptWidth ( ccp source )
-{
-    return ERR_OK != ScanSizeOptU32(
-			&opt_width,		// u32 * num
-			source,			// ccp source
-			1,			// default_factor1
-			0,			// int force_base
-			"width",		// ccp opt_name
-			40,			// u64 min
-			10000,			// u64 max
-			1,			// u32 multiple
-			0,			// u32 pow2
-			true			// bool print_err
-			);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-int GetTermWidth ( int default_value, int min_value )
-{
-    int term_width = opt_width > 0
-			? opt_width
-			: GetTermWidthFD(STDOUT_FILENO,-1,min_value);
-    if ( term_width <= 0 )
-	term_width = GetTermWidthFD(STDERR_FILENO,-1,min_value);
-
-    return term_width > 0 ? term_width : default_value;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-int GetTermWidthFD ( int fd, int default_value, int min_value )
-{
-    TRACE("GetTermWidthFD(%d,%d)\n",fd,default_value);
-
- #ifdef TIOCGSIZE
-    TRACE(" - have TIOCGSIZE\n");
- #endif
-
- #ifdef TIOCGWINSZ
-    TRACE(" - have TIOCGWINSZ\n");
- #endif
-
-    if (isatty(fd))
-    {
-     #ifdef TIOCGSIZE
-	{
-	    struct ttysize ts;
-	    if ( !ioctl(fd,TIOCGSIZE,&ts))
-	    {
-		TRACE(" - TIOCGSIZE = %d*%d\n",ts.ts_cols,ts.ts_lines);
-		if ( ts.ts_cols > 0 )
-		    return ts.ts_cols > min_value ? ts.ts_cols : min_value;
-	    }
-	}
-     #endif
-
-     #ifdef TIOCGWINSZ
-	{
-	    struct winsize ws;
-	    if ( !ioctl(fd,TIOCGWINSZ,&ws))
-	    {
-		TRACE(" - TIOCGWINSZ = %d*%d\n",ws.ws_col,ws.ws_row);
-		if ( ws.ws_col > 0 )
-		    return ws.ws_col > min_value ? ws.ws_col : min_value;
-	    }
-	}
-     #endif
-    }
-
-    return default_value ? default_value : opt_width;
-}
-
-//
-///////////////////////////////////////////////////////////////////////////////
-///////////////			    timer			///////////////
-///////////////////////////////////////////////////////////////////////////////
-
-u32 GetTimerMSec()
-{
-    struct timeval tval;
-    gettimeofday(&tval,NULL);
-
-    static time_t timebase = 0;
-    if (!timebase)
-	timebase = tval.tv_sec;
-
-    return ( tval.tv_sec - timebase ) * 1000 + tval.tv_usec/1000;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-ccp PrintMSec ( char * buf, int bufsize, u32 msec, bool PrintMSec )
-{
-    if (PrintMSec)
-	snprintf(buf,bufsize,"%02d:%02d:%02d.%03d",
-	    msec/3600000, msec/60000%60, msec/1000%60, msec%1000 );
-    else
-	snprintf(buf,bufsize,"%02d:%02d:%02d",
-	    msec/3600000, msec/60000%60, msec/1000%60 );
-    ccp ptr = buf;
-    int colon_counter = 0;
-    while ( *ptr == '0' || *ptr == ':' && !colon_counter++ )
-	ptr++;
-    return *ptr == ':' ? ptr-1 : ptr;
+    return ret_not_found;
 }
 
 //
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////			string functions		///////////////
-///////////////////////////////////////////////////////////////////////////////
-
-ccp PathCatPP ( char * buf, size_t bufsize, ccp path1, ccp path2 )
-{
-    // concatenate path + path
-
-    if ( !path1 || !*path1 )
-	return path2 ? path2 : "";
-
-    if ( !path2 || !*path2 )
-	return path1;
-
-    char * ptr = StringCopyS(buf,bufsize-1,path1);
-    DASSERT( ptr > buf );
-    if ( ptr[-1] != '/' )
-	*ptr++ = '/';
-    while ( *path2 == '/' )
-	path2++;
-    StringCopyE(ptr,buf+bufsize,path2);
-    return buf;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-ccp PathCatPPE ( char * buf, size_t bufsize, ccp path1, ccp path2, ccp ext )
-{
-    // concatenate path + path + extension
-
-    char * ptr = path1 ? StringCopyS(buf,bufsize-1,path1) : buf;
-    if ( ptr > buf && ptr[-1] != '/' )
-	*ptr++ = '/';
-
-    if (path2)
-    {
-	while ( *path2 == '/' )
-	    path2++;
-	ptr = StringCopyE(ptr,buf+bufsize,path2);
-    }
-
-    if (ext)
-	StringCopyE(ptr,buf+bufsize,ext);
-
-    return buf;
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 
 char * SetupDirPath ( char * buf, size_t bufsize, ccp src_path )
@@ -1334,13 +928,6 @@ int NintendoCMP ( ccp path1, ccp path2 )
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-
-int NormalizeIndent ( int indent )
-{
-    return indent < 0 ? 0 : indent < 50 ? indent : 50;
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 
 int CheckIDHelper // helper for all other id functions
@@ -1535,7 +1122,7 @@ int ScanPrintTimeMode ( ccp arg, int prev_mode )
     #define CT PT_USE_CTIME|PT_F_CTIME
     #define AT PT_USE_ATIME|PT_F_ATIME
 
-    static const CommandTab_t tab[] =
+    static const KeywordTab_t tab[] =
     {
 	{ 0,			"RESET",	"-",	PT__MASK },
 
@@ -1582,7 +1169,7 @@ int ScanPrintTimeMode ( ccp arg, int prev_mode )
     #undef CT
     #undef AT
 
-    const int stat = ScanCommandListMask(arg,tab);
+    const int stat = ScanKeywordListMask(arg,tab);
     if ( stat >= 0 )
 	return SetPrintTimeMode(prev_mode,stat);
 
@@ -1831,434 +1418,18 @@ time_t ScanTime ( ccp arg )
 
 //
 ///////////////////////////////////////////////////////////////////////////////
-///////////////			    scan number			///////////////
-///////////////////////////////////////////////////////////////////////////////
-
-char * ScanS32
-(
-    // return 'source' on error
-
-    s32		*res_num,		// not NULL: store result (only on success)
-    ccp		source,			// NULL or source text
-    uint	default_base		// base for numbers without '0x' prefix
-					//  0: C like with octal support
-					// 10: standard value for decimal numbers
-					// 16: standard value for hex numbers
-)
-{
-    ccp src = source;
-    while ( *src > 0 && *src <= ' ' )
-	src++;
-
-    const bool minus = *src == '-';
-    if ( minus || *src == '+' )
-    {
-	src++;
-	while ( *src > 0 && *src <= ' ' )
-	    src++;
-    }
-    const uint base = src[0] == '0' && ( src[1] == 'x' || src[1] == 'X' )
-			? 16 : default_base;
-    char *end;
-    const s32 num = strtoul( src, &end, base );
-    if ( (ccp)end > src )
-    {
-	if (res_num)
-	    *res_num = minus ? -num : num;
-	return end;
-    }
-
-    return (char*)source;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-char * ScanS64
-(
-    // return 'source' on error
-
-    s64		*res_num,		// not NULL: store result (only on success)
-    ccp		source,			// NULL or source text
-    uint	default_base		// base for numbers without '0x' prefix
-					//  0: C like with octal support
-					// 10: standard value for decimal numbers
-					// 16: standard value for hex numbers
-)
-{
-    ccp src = source;
-    while ( *src > 0 && *src <= ' ' )
-	src++;
-
-    const bool minus = *src == '-';
-    if ( minus || *src == '+' )
-    {
-	src++;
-	while ( *src > 0 && *src <= ' ' )
-	    src++;
-    }
-    const uint base = src[0] == '0' && ( src[1] == 'x' || src[1] == 'X' )
-			? 16 : default_base;
-    char *end;
-    const s64 num = strtoull( src, &end, base );
-    if ( (ccp)end > src )
-    {
-	if (res_num)
-	    *res_num = minus ? -num : num;
-	return end;
-    }
-
-    return (char*)source;
-}
-
-//
-///////////////////////////////////////////////////////////////////////////////
 ///////////////			    scan size			///////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-u64 ScanSizeFactor ( char ch_factor, int force_base )
+u64 ScanSizeFactorWii ( char ch_factor, int force_base )
 {
-    if ( force_base == 1000 )
+    switch (ch_factor)
     {
-	switch (ch_factor)
-	{
-	    case 'b': case 'c': return     1;
-	    case 'k': case 'K': return KB_SI;
-	    case 'm': case 'M': return MB_SI;
-	    case 'g': case 'G': return GB_SI;
-	    case 't': case 'T': return TB_SI;
-	    case 'p': case 'P': return PB_SI;
-	    case 'e': case 'E': return EB_SI;
-
-	    case 's': case 'S': return WII_SECTOR_SIZE;
-	    case 'u': case 'U': return GC_DISC_SIZE;
-	    case 'w': case 'W': return WII_SECTORS_SINGLE_LAYER *(u64)WII_SECTOR_SIZE;
-	}
-    }
-    else if ( force_base == 1024 )
-    {
-	switch (ch_factor)
-	{
-	    case 'b': case 'c': return   1;
-	    case 'k': case 'K': return KiB;
-	    case 'm': case 'M': return MiB;
-	    case 'g': case 'G': return GiB;
-	    case 't': case 'T': return TiB;
-	    case 'p': case 'P': return PiB;
-	    case 'e': case 'E': return EiB;
-
-	    case 's': case 'S': return WII_SECTOR_SIZE;
-	    case 'u': case 'U': return GC_DISC_SIZE;
-	    case 'w': case 'W': return WII_SECTORS_SINGLE_LAYER *(u64)WII_SECTOR_SIZE;
-	}
-    }
-    else
-    {
-	switch (ch_factor)
-	{
-	    case 'b':
-	    case 'c': return 1;
-
-	    case 'k': return KB_SI;
-	    case 'm': return MB_SI;
-	    case 'g': return GB_SI;
-	    case 't': return TB_SI;
-	    case 'p': return PB_SI;
-	    case 'e': return EB_SI;
-
-	    case 'K': return KiB;
-	    case 'M': return MiB;
-	    case 'G': return GiB;
-	    case 'T': return TiB;
-	    case 'P': return PiB;
-	    case 'E': return EiB;
-
-	    case 's':
-	    case 'S': return WII_SECTOR_SIZE;
-
-	    case 'u':
-	    case 'U': return GC_DISC_SIZE;
-
-	    case 'w':
-	    case 'W': return WII_SECTORS_SINGLE_LAYER *(u64)WII_SECTOR_SIZE;
-	}
+	case 's': case 'S': return WII_SECTOR_SIZE;
+	case 'u': case 'U': return GC_DISC_SIZE;
+	case 'w': case 'W': return WII_SECTORS_SINGLE_LAYER *(u64)WII_SECTOR_SIZE;
     }
     return 0;
-}
-
-//-----------------------------------------------------------------------------
-
-char * ScanSizeTerm ( double * num, ccp source, u64 default_factor, int force_base )
-{
-    ASSERT(source);
-
-    char * end;
-    double d = strtod(source,&end);
-    if ( end > source )
-    {
-	// something was read
-
-	if ( *end == '/' )
-	{
-	    const double div = strtod(end+1,&end);
-	    if ( div > 0 )
-		d /= div;
-	}
-
-	u64 factor = ScanSizeFactor(*end,force_base);
-	if (factor)
-	    end++;
-	else
-	    factor = default_factor;
-
-	if (factor)
-	    d *= factor;
-	else
-	    end = (char*)source;
-    }
-
-    if (num)
-	*num = d;
-
-    return end;
-}
-
-//-----------------------------------------------------------------------------
-
-char * ScanSize ( double * num, ccp source,
-		  u64 default_factor1, u64 default_factor2, int force_base )
-{
-    DASSERT(source);
-    TRACE("ScanSize(df=%llx,%llx, base=%u)\n",
-			default_factor1, default_factor2, force_base );
-
-    double sum = 0.0;
-    bool add = true;
-    char * end = 0;
-    for (;;)
-    {
-	double term;
-	end = ScanSizeTerm(&term,source,default_factor1,force_base);
-	if ( end == source )
-	    break;
-	if (add)
-	    sum += term;
-	else
-	    sum -= term;
-
-	while ( *end > 0 && *end <= ' ' )
-	    end++;
-
-	if ( *end == '+' )
-	    add = true;
-	else if ( *end == '-' )
-	    add = false;
-	else
-	    break;
-
-	source = end+1;
-	while ( *source > 0 && *source <= ' ' )
-	    source++;
-
-	if ( !*source && default_factor2 )
-	{
-	    if (add)
-		sum += default_factor2;
-	    else
-		sum -= default_factor2;
-	    end = (char*)source;
-	    break;
-	}
-
-	default_factor1 = default_factor2;
-    }
-
-    if (num)
-	*num = sum;
-
-    return end;
-}
-
-//-----------------------------------------------------------------------------
-
-char * ScanSizeU32 ( u32 * num, ccp source,
-		     u64 default_factor1, u64 default_factor2, int force_base )
-{
-    double d;
-    char * end = ScanSize(&d,source,default_factor1,default_factor2,force_base);
-    //d = ceil(d+0.5);
-    if ( d < 0 || d > ~(u32)0 )
-	end = (char*)source;
-    else if (num)
-	*num = (u32)d;
-
-    return end;
-}
-
-//-----------------------------------------------------------------------------
-
-char * ScanSizeU64 ( u64 * num, ccp source,
-		     u64 default_factor1, u64 default_factor2, int force_base )
-{
-    double d;
-    char * end = ScanSize(&d,source,default_factor1,default_factor2,force_base);
-    //d = ceil(d+0.5);
-    if ( d < 0 || d > ~(u64)0 )
-	end = (char*)source;
-    else if (num)
-	*num = (u64)d;
-
-    return end;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-enumError ScanSizeOpt
-	( double * num, ccp source,
-	  u64 default_factor1, u64 default_factor2, int force_base,
-	  ccp opt_name, u64 min, u64 max, bool print_err )
-{
-    double d;
-    char * end = ScanSize(&d,source,default_factor1,default_factor2,force_base);
-
- #ifdef DEBUG
-    {
-	u64 size = d;
-	TRACE("--%s %8.6g ~ %llu ~ %llu GiB ~ %llu GB\n",
-		opt_name, d, size, (size+GiB/2)/GiB, (size+500000000)/1000000000 );
-    }
- #endif
-
-    enumError err = ERR_OK;
-
-    if ( source == end || *end )
-    {
-	err = ERR_SYNTAX;
-	if (print_err)
-	    ERROR0(ERR_SYNTAX,
-			"Illegal number for option --%s: %s\n",
-			opt_name, source );
-    }
-    else if ( min > 0 && d < min )
-    {
-	err = ERR_SYNTAX;
-	if (print_err)
-	    ERROR0(ERR_SEMANTIC,
-			"Value of --%s too small (must not <%llu): %s\n",
-			opt_name, min, source );
-    }
-    else if ( max > 0 && d > max )
-    {
-	err = ERR_SYNTAX;
-	if (print_err)
-	    ERROR0(ERR_SEMANTIC,
-			"Value of --%s too large (must not >%llu): %s\n",
-			opt_name, max, source );
-    }
-
-    if ( num && !err )
-	*num = d;
-    return err;
-}
-
-//-----------------------------------------------------------------------------
-
-enumError ScanSizeOptU64
-	( u64 * num, ccp source, u64 default_factor1, int force_base,
-	  ccp opt_name, u64 min, u64 max, u32 multiple, u32 pow2, bool print_err )
-{
-    if (!max)
-	max = ~(u64)0;
-
-    if ( pow2 && !force_base )
-    {
-	// try base 1024 first without error messages
-	u64 val;
-	if (!ScanSizeOptU64( &val, source, default_factor1, 1024,
-				opt_name, min,max, multiple, pow2, false ))
-	{
-	    if (num)
-		*num = val;
-	    return ERR_OK;
-	}
-    }
-
-    double d = 0.0;
-    enumError err = ScanSizeOpt(&d,source,default_factor1,
-				multiple ? multiple : 1,
-				force_base,opt_name,min,max,print_err);
-
-    u64 val;
-    if ( d < 0.0 )
-    {
-	val = 0;
-	err = ERR_SEMANTIC;
-	if (print_err)
-	    ERROR0(ERR_SEMANTIC, "--%s: negative values not allowed: %s\n",
-			opt_name, source );
-    }
-    else
-	val = d;
-
-    if ( err == ERR_OK && pow2 > 0 && val )
-    {
-	int shift_count = 0;
-	u64 shift_val = val;
-	if (val)
-	{
-	    while (!(shift_val&1))
-	    {
-		shift_count++;
-		shift_val >>= 1;
-	    }
-	}
-
-	if ( shift_val != 1 || shift_count/pow2*pow2 != shift_count )
-	{
-	    err = ERR_SEMANTIC;
-	    if (print_err)
-		ERROR0(ERR_SYNTAX,
-			"--%s: value must be a power of %d but not %llu\n",
-			opt_name, 1<<pow2, val );
-	}
-    }
-
-    if ( err == ERR_OK && multiple > 1 )
-    {
-	u64 xval = val / multiple * multiple;
-	if ( xval != val )
-	{
-	    if ( min > 0 && xval < min )
-		xval += multiple;
-
-	    if (print_err)
-		ERROR0(ERR_WARNING,
-			"--%s: value must be a multiple of %u -> use %llu instead of %llu.\n",
-			opt_name, multiple, xval, val );
-	    val = xval;
-	}
-    }
-
-    if ( num && !err )
-	*num = val;
-    return err;
-}
-
-//-----------------------------------------------------------------------------
-
-enumError ScanSizeOptU32
-	( u32 * num, ccp source, u64 default_factor1, int force_base,
-	  ccp opt_name, u64 min, u64 max, u32 multiple, u32 pow2, bool print_err )
-{
-    if ( !max || max > ~(u32)0 )
-	max = ~(u32)0;
-
-    u64 val = 0;
-    enumError err = ScanSizeOptU64( &val, source, default_factor1, force_base,
-				opt_name, min, max, multiple, pow2, print_err );
-
-    if ( num && !err )
-	*num = (u32)val;
-    return err;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -2547,122 +1718,6 @@ enumError ScanHexSilent
     return count == buf_size && !*arg ? ERR_OK : ERR_SYNTAX;
 }
 
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-
-void PutLines
-(
-    FILE	* f,		// valid output stream
-    int		indent,		// indent of output
-    int		fw,		// field width of output
-    int		first_line,	// length without prefix of already printed first line 
-    ccp		prefix,		// NULL or prefix for each line
-    ccp		text		// text to print
-)
-{
-    DASSERT(f);
-    DASSERT( indent >= 0 );
-
-    if (!prefix)
-	prefix = "";
-    TRACE("PutLines(,%d,%d,%d,%.10s,%.20s)\n",indent,fw,first_line,prefix,text);
-    fw -= strlen(prefix);
-    if ( fw < 10 )
-	fw = 10;
-
-    ccp prefix1 = "";
-    int indent1, fw1;
-    if (  indent > first_line )
-    {
-	indent1 = indent - first_line;
-	fw1 = fw - indent;
-    }
-    else
-    {
-	indent1 = 0;
-	fw1 = fw - first_line;
-    }
-
-    fw -= indent;
-    if ( fw < 20 )
-	fw = 20;
-
-    if ( fw1 < 20 )
-    {
-	fputc('\n',f);
-	indent1 = indent;
-	fw1 = fw;
-	prefix1 = prefix;
-    }
-    
-    while ( *text )
-    {
-	// skip blank and control
-	if ( *text == '\n' )
-	{
-	    // don't skip spaces behind a LF ==> needed for tables
-	    while ( *text > 0 && *text < ' ' )
-		text++;
-	}
-	else
-	{
-	    // but ignore spaces on an automatic line break
-	    while ( *text > 0 && *text <= ' ' )
-		text++;
-	}
-
-	// setup
-	ccp start = text, last_blank = text;
-	ccp max = text + fw1;
-
-	while ( text < max && *text && *text != '\n' )
-	{
-	    if ( *text > 0 && *text <= ' ' )
-		last_blank = text;
-	    text++;
-	}
-
-	// set back to last blank
-	if ( last_blank > start && (u8)*text > ' ' )
-	    text = last_blank;
-
-	// print out
-	if ( *text || text > start )
-	    fprintf(f,"%s%*s%.*s\n", prefix1, indent1, "", (int)(text-start), start );
-
-	// use standard values for next lines
-	indent1 = indent;
-	fw1 = fw;
-	prefix1 = prefix;
-    }
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void PrintLines
-(
-    FILE	* f,		// valid output stream
-    int		indent,		// indent of output
-    int		fw,		// field width of output
-    int		first_line,	// length without prefix of already printed first line 
-    ccp		prefix,		// NULL or prefix for each line
-    ccp		format,		// format string for vsnprintf()
-    ...				// arguments for 'vsnprintf(format,...)'
-)
-{
-    DASSERT(f);
-    DASSERT(format);
-
-    char msg[5000];
-
-    va_list arg;
-    va_start(arg,format);
-    vsnprintf(msg,sizeof(msg),format,arg);
-    va_end(arg);
-
-    PutLines(f,indent,fw,first_line,prefix,msg);
-}
-
 //
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////		    scan compression option		///////////////
@@ -2689,7 +1744,7 @@ static wd_compression_t ScanCompression_helper
 	COMPR_MEM = WD_COMPR__N+1
     };
 
-    static const CommandTab_t tab[] =
+    static const KeywordTab_t tab[] =
     {
 	{ WD_COMPR_NONE,	"NONE",		0,	0 },
 	{ WD_COMPR_PURGE,	"PURGE",	"WDF",	0 },
@@ -2769,7 +1824,7 @@ static wd_compression_t ScanCompression_helper
 	}
     }
 
-    const CommandTab_t * cmd = ScanCommand(0,scan_arg,tab);
+    const KeywordTab_t * cmd = ScanKeyword(0,scan_arg,tab);
     if (cmd)
     {
 	wd_compression_t compr = cmd->id;
@@ -3021,289 +2076,12 @@ u64 GetMemLimit()
 
 //
 ///////////////////////////////////////////////////////////////////////////////
-///////////////			 CommandTab_t			///////////////
-///////////////////////////////////////////////////////////////////////////////
-
-const CommandTab_t * ScanCommand
-(
-    int			* res_abbrev,	// NULL or pointer to result 'abbrev_count'
-    ccp			arg,		// argument to scan
-    const CommandTab_t	* cmd_tab	// valid pointer to command table
-)
-{
-    ASSERT(arg);
-    char cmd_buf[COMMAND_NAME_MAX];
-
-    char *dest = cmd_buf;
-    char *end  = cmd_buf + sizeof(cmd_buf) - 1;
-    while ( *arg && dest < end )
-	*dest++ = toupper((int)*arg++);
-    *dest = 0;
-    const int cmd_len = dest - cmd_buf;
-
-    int abbrev_count = 0;
-    const CommandTab_t *ct, *cmd_ct = 0, *abbrev_ct = 0;
-    for ( ct = cmd_tab; ct->name1; ct++ )
-    {
-	if ( !strcmp(ct->name1,cmd_buf) || ct->name2 && !strcmp(ct->name2,cmd_buf) )
-	{
-	    cmd_ct = ct;
-	    break;
-	}
-
-	if ( *cmd_buf == '_' ) // no abbreviations for commands beginning with '_'
-	    continue;
-
-	if ( !memcmp(ct->name1,cmd_buf,cmd_len)
-		|| ct->name2 && !memcmp(ct->name2,cmd_buf,cmd_len) )
-	{
-	    if ( !abbrev_ct || abbrev_ct->id != ct->id || abbrev_ct->opt != ct->opt )
-	    {
-		abbrev_ct = ct;
-		abbrev_count++;
-	    }
-	}
-    }
-
-    if (cmd_ct)
-	abbrev_count = 0;
-    else if ( abbrev_count == 1 )
-	cmd_ct = abbrev_ct;
-    else if (!abbrev_count)
-	abbrev_count = -1;
-
-    if (res_abbrev)
-	*res_abbrev = abbrev_count;
-
-    return cmd_ct;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-s64 ScanCommandList
-(
-    ccp			arg,		// argument to scan
-    const CommandTab_t	* cmd_tab,	// valid pointer to command table
-    CommandCallbackFunc	func,		// NULL or calculation function
-    bool		allow_prefix,	// allow '-' | '+' | '=' as prefix
-    u32			max_number,	// allow numbers < 'max_number' (0=disabled)
-    s64			result		// start value for result
-)
-{
-    ASSERT(arg);
-
-    char cmd_buf[COMMAND_NAME_MAX];
-    char *end  = cmd_buf + sizeof(cmd_buf) - 1;
-
-    for (;;)
-    {
-	while ( *arg > 0 && *arg <= ' ' || *arg == ',' )
-	    arg++;
-
-	if (!*arg)
-	    return result;
-
-	char *dest = cmd_buf;
-	while ( *arg > ' ' && *arg != ',' &&
-		( *arg != '+' || dest == cmd_buf ) && dest < end )
-	    *dest++ = *arg++;
-	*dest = 0;
-	char prefix = 0;
-	int abbrev_count;
-	const CommandTab_t * cptr = ScanCommand(&abbrev_count,cmd_buf,cmd_tab);
-	if ( !cptr && allow_prefix && cmd_buf[1]
-	    && ( *cmd_buf == '+' || *cmd_buf == '-' || *cmd_buf == '/' || *cmd_buf == '=' ))
-	{
-	    prefix = *cmd_buf == '/' ? '-' : *cmd_buf;
-	    cptr = ScanCommand(&abbrev_count,cmd_buf+1,cmd_tab);
-	}
-
-	CommandTab_t ct_num = { 0, cmd_buf, 0, 0 };
-	if ( max_number && abbrev_count )
-	{
-	    char * start = cmd_buf + (prefix!=0);
-	    ulong num = strtol(start,&dest,10);
-	    if ( num < max_number && dest > start && !*dest )
-	    {
-		ct_num.id = num;
-		cptr = &ct_num;
-	    }
-	}
-
-	if ( !cptr || cptr->opt && prefix && prefix != '+' )
-	    return -1;
-
-
-	if (func)
-	{
-	    result = func(0,cmd_buf,cmd_tab,cptr,prefix,result);
-	    if ( result == -(s64)1 )
-		return result;
-	}
-	else
-	{
-	    switch (prefix)
-	    {
-		case 0:
-		case '+': result  =  result & ~cptr->opt | cptr->id; break;
-		case '-': result &= ~cptr->id; break;
-		case '=': result  =  cptr->id; break;
-	    }
-	}
-    }
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-enumError ScanCommandListFunc
-(
-    ccp			arg,		// argument to scan
-    const CommandTab_t	* cmd_tab,	// valid pointer to command table
-    CommandCallbackFunc	func,		// calculation function
-    void		* param,	// used define parameter for 'func'
-    bool		allow_prefix	// allow '-' | '+' | '=' as prefix
-)
-{
-    ASSERT(arg);
-    ASSERT(func);
-
-    char cmd_buf[COMMAND_NAME_MAX];
-    char *end  = cmd_buf + sizeof(cmd_buf) - 1;
-
-    for (;;)
-    {
-	while ( *arg > 0 && *arg <= ' ' || *arg == ',' )
-	    arg++;
-
-	if (!*arg)
-	    return ERR_OK;
-
-	char *dest = cmd_buf;
-	while ( *arg > ' ' && *arg != ',' &&
-		( *arg != '+' || dest == cmd_buf ) && dest < end )
-	    *dest++ = *arg++;
-	*dest = 0;
-	char prefix = 0;
-	int abbrev_count;
-	const CommandTab_t * cptr = ScanCommand(&abbrev_count,cmd_buf,cmd_tab);
-	if ( !cptr && allow_prefix && cmd_buf[1]
-	    && ( *cmd_buf == '+' || *cmd_buf == '-' || *cmd_buf == '/' || *cmd_buf == '=' ))
-	{
-	    prefix = *cmd_buf == '/' ? '-' : *cmd_buf;
-	    cptr = ScanCommand(&abbrev_count,cmd_buf+1,cmd_tab);
-	}
-
-	const enumError err = func(param,cmd_buf,cmd_tab,cptr,prefix,0);
-	if (err)
-	    return err;
-    }
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-static s64 ScanCommandListMaskHelper
-(
-    void		* param,	// NULL or user defined parameter
-    ccp			name,		// normalized name of option
-    const CommandTab_t	* cmd_tab,	// valid pointer to command table
-    const CommandTab_t	* cmd,		// valid pointer to found command
-    char		prefix,		// 0 | '-' | '+' | '='
-    s64			result		// current value of result
-)
-{
-    return cmd->opt
-		? result & ~cmd->opt | cmd->id
-		: cmd->id;
-}
-
-//-----------------------------------------------------------------------------
-
-s64 ScanCommandListMask
-(
-    ccp			arg,		// argument to scan
-    const CommandTab_t	* cmd_tab	// valid pointer to command table
-)
-{
-    return ScanCommandList(arg,cmd_tab,ScanCommandListMaskHelper,false,0,0);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void PrintCommandError
-(
-    const CommandTab_t	* cmd_tab,	// NULL or pointer to command table
-    ccp			cmd_arg,	// analyzed command
-    int			cmd_stat,	// status of ScanCommand()
-    ccp			object		// NULL or object for error messages
-					//	default= 'command'
-)
-{
-    DASSERT(cmd_arg);
-
-    if ( !object || !*object )
-	object = "command";
-
-    if ( cmd_stat <= 0 )
-    {
-	ERROR0(ERR_SYNTAX,"Unknown %s: %s\n",object,cmd_arg);
-	return;
-    }
-
-    char buf[100], *dest = buf;
-    if (cmd_tab)
-    {
-	int n = 0;
-	ccp buf_end = buf + sizeof(buf) - 2;
-	const int arg_len = strlen(cmd_arg);
-	const CommandTab_t *ct;
-	int last_id = -1;
-
-	for ( ct = cmd_tab; ct->name1 && dest < buf_end; ct++ )
-	{
-	    if ( ct->id != last_id )
-	    {
-		ccp ok = 0;
-		if (!strncasecmp(cmd_arg,ct->name1,arg_len))
-		    ok = ct->name1;
-		else if ( ct->name2 && !strncasecmp(cmd_arg,ct->name2,arg_len))
-		    ok = ct->name2;
-		if (ok)
-		{
-		    if (!n++)
-		    {
-			*dest++ = ' ';
-			*dest++ = '[';
-		    }
-		    else if ( n > 5 )
-		    {
-			dest = StringCopyE(dest,buf_end,",...");
-			break;
-		    }
-		    else
-			*dest++ = ',';
-		    dest = StringCopyE(dest,buf_end,ok);
-		    last_id = ct->id;
-		}
-	    }
-	}
-	if ( dest > buf+1 )
-	    *dest++ = ']';
-	else
-	    dest = buf;
-    }
-    *dest = 0;
-    ERROR0(ERR_SYNTAX,"%c%s abbreviation is ambiguous: %s%s\n",
-		toupper((int)*object), object+1, cmd_arg, buf );
-}
-
-//
-///////////////////////////////////////////////////////////////////////////////
 ///////////////			    sort mode			///////////////
 ///////////////////////////////////////////////////////////////////////////////
 
 SortMode ScanSortMode ( ccp arg )
 {
-    static const CommandTab_t tab[] =
+    static const KeywordTab_t tab[] =
     {
 	{ SORT_NONE,	"NONE",		"-",		SORT__MASK },
 
@@ -3335,7 +2113,7 @@ SortMode ScanSortMode ( ccp arg )
 	{ 0,0,0,0 }
     };
 
-    const int stat = ScanCommandListMask(arg,tab);
+    const int stat = ScanKeywordListMask(arg,tab);
     if ( stat >= 0 )
 	return stat;
 
@@ -3369,7 +2147,7 @@ ShowMode ScanShowMode ( ccp arg )
 	HEX_ALL = SHOW_F_HEX1 | SHOW_F_HEX,
     };
 
-    static const CommandTab_t tab[] =
+    static const KeywordTab_t tab[] =
     {
 	{ SHOW__NONE,		"NONE",		"-",		SHOW__ALL },
 	{ SHOW__ALL,		"ALL",		0,		0 },
@@ -3417,7 +2195,7 @@ ShowMode ScanShowMode ( ccp arg )
 	{ 0,0,0,0 }
     };
 
-    int stat = ScanCommandList(arg,tab,0,true,0,SHOW_F_HEAD);
+    int stat = ScanKeywordList(arg,tab,0,true,0,SHOW_F_HEAD,0,0);
     if ( stat != -1 )
 	return stat;
 
@@ -3497,7 +2275,7 @@ wd_size_mode_t ScanUnit ( ccp arg )
 	F_1024 = WD_SIZE_F_1024,
     };
 
-    static const CommandTab_t tab[] =
+    static const KeywordTab_t tab[] =
     {
 	{ WD_SIZE_DEFAULT,	"DEFAULT",0,	WD_SIZE_M_MODE|WD_SIZE_M_BASE },
 
@@ -3535,7 +2313,7 @@ wd_size_mode_t ScanUnit ( ccp arg )
 	{ 0,0,0,0 }
     };
 
-    int stat = ScanCommandList(arg,tab,0,true,0,0);
+    int stat = ScanKeywordList(arg,tab,0,true,0,0,0,0);
     if ( stat != -1 )
 	return stat;
 
@@ -3563,7 +2341,7 @@ int ScanOptUnit ( ccp arg )
 
 RepairMode ScanRepairMode ( ccp arg )
 {
-    static const CommandTab_t tab[] =
+    static const KeywordTab_t tab[] =
     {
 	{ REPAIR_NONE,		"NONE",		"-",	REPAIR_ALL },
 
@@ -3581,7 +2359,7 @@ RepairMode ScanRepairMode ( ccp arg )
 	{ 0,0,0,0 }
     };
 
-    int stat = ScanCommandList(arg,tab,0,true,0,0);
+    int stat = ScanKeywordList(arg,tab,0,true,0,0,0,0);
     if ( stat != -1 )
 	return stat;
 
@@ -3755,81 +2533,7 @@ void DumpIdField ( FILE *f, int indent, const IdField_t * idf )
 
 //
 ///////////////////////////////////////////////////////////////////////////////
-///////////////			  StringField_t			///////////////
-///////////////////////////////////////////////////////////////////////////////
-
-void InitializeStringField ( StringField_t * sf )
-{
-    ASSERT(sf);
-    memset(sf,0,sizeof(*sf));
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void ResetStringField ( StringField_t * sf )
-{
-    ASSERT(sf);
-    if ( sf && sf->used > 0 )
-    {
-	ASSERT(sf->field);
-	ccp *ptr = sf->field, *end;
-	for ( end = ptr + sf->used; ptr < end; ptr++ )
-	    FREE((char*)*ptr);
-	FREE(sf->field);
-    }
-    InitializeStringField(sf);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-ccp FindStringField ( StringField_t * sf, ccp key )
-{
-    bool found;
-    int idx = FindStringFieldHelper(sf,&found,key);
-    return found ? sf->field[idx] : 0;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-static ccp * InsertStringFieldHelper ( StringField_t * sf, int idx )
-{
-    DASSERT(sf);
-    DASSERT( sf->used <= sf->size );
-    if ( sf->used == sf->size )
-    {
-	sf->size += 0x100;
-	sf->field = REALLOC(sf->field,sf->size*sizeof(*sf->field));
-    }
-    DASSERT( idx <= sf->used );
-    ccp * dest = sf->field + idx;
-    memmove(dest+1,dest,(sf->used-idx)*sizeof(ccp));
-    sf->used++;
-    return dest;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-bool InsertStringField ( StringField_t * sf, ccp key, bool move_key )
-{
-    if (!key)
-	return 0;
-
-    bool found;
-    int idx = FindStringFieldHelper(sf,&found,key);
-    if (found)
-    {
-	if (move_key)
-	    FREE((char*)key);
-    }
-    else
-    {
-	ccp * dest = InsertStringFieldHelper(sf,idx);
-	*dest = move_key ? key : STRDUP(key);
-    }
-
-    return !found;
-}
-
+///////////////			StringField_t			///////////////
 ///////////////////////////////////////////////////////////////////////////////
 
 IdItem_t * InsertStringID6 ( StringField_t * sf, void * id6, char flag, ccp arg )
@@ -3862,160 +2566,12 @@ IdItem_t * InsertStringID6 ( StringField_t * sf, void * id6, char flag, ccp arg 
     return item;
 }
 
-///////////////////////////////////////////////////////////////////////////////
-
-bool RemoveStringField ( StringField_t * sf, ccp key )
-{
-    bool found;
-    uint idx = FindStringFieldHelper(sf,&found,key);
-    if (found)
-    {
-	sf->used--;
-	ASSERT( idx <= sf->used );
-	ccp * dest = sf->field + idx;
-	FREE((char*)dest);
-	memmove(dest,dest+1,(sf->used-idx)*sizeof(ccp));
-    }
-    return found;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void AppendStringField ( StringField_t * sf, ccp key, bool move_key )
-{
-    if (key)
-    {
-	ASSERT( sf->used <= sf->size );
-	if ( sf->used == sf->size )
-	{
-	    sf->size += 0x100;
-	    sf->field = REALLOC(sf->field,sf->size*sizeof(*sf->field));
-	}
-	TRACE("AppendStringField(%s,%d) %d/%d\n",key,move_key,sf->used,sf->size);
-	ccp * dest = sf->field + sf->used++;
-	*dest = move_key ? key : STRDUP(key);
-    }
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-uint FindStringFieldHelper ( StringField_t * sf, bool * p_found, ccp key )
-{
-    ASSERT(sf);
-
-    int beg = 0;
-    if ( sf && key )
-    {
-	int end = sf->used - 1;
-	while ( beg <= end )
-	{
-	    uint idx = (beg+end)/2;
-	    int stat = strcmp(key,sf->field[idx]);
-	    if ( stat < 0 )
-		end = idx - 1 ;
-	    else if ( stat > 0 )
-		beg = idx + 1;
-	    else
-	    {
-		TRACE("FindStringFieldHelper(%s) FOUND=%d/%d/%d\n",
-			key, idx, sf->used, sf->size );
-		if (p_found)
-		    *p_found = true;
-		return idx;
-	    }
-	}
-    }
-
-    TRACE("FindStringFieldHelper(%s) failed=%d/%d/%d\n",
-		key, beg, sf->used, sf->size );
-
-    if (p_found)
-	*p_found = false;
-    return beg;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-enumError LoadStringField
-	( StringField_t * sf, bool keep_order, ccp filename, bool silent )
-{
-    ASSERT(sf);
-    ASSERT(filename);
-    ASSERT(*filename);
-
-    TRACE("LoadStringField(%p,%d,%s,%d)\n",sf,keep_order,filename,silent);
-
-    FILE * f = fopen(filename,"rb");
-    if (!f)
-    {
-	if (!silent)
-	    ERROR1(ERR_CANT_OPEN,"Can't open file: %s\n",filename);
-	return ERR_CANT_OPEN;
-    }
-
-    while (fgets(iobuf,sizeof(iobuf)-1,f))
-    {
-	char * ptr = iobuf;
-	while (*ptr)
-	    ptr++;
-	if ( ptr > iobuf && ptr[-1] == '\n' )
-	{
-	    ptr--;
-	    if ( ptr > iobuf && ptr[-1] == '\r' )
-		ptr--;
-	}
-
-	if ( ptr > iobuf )
-	{
-	    *ptr++ = 0;
-	    const size_t len = ptr-iobuf;
-	    ptr = MALLOC(len);
-	    memcpy(ptr,iobuf,len);
-	    if (keep_order)
-		AppendStringField(sf,ptr,true);
-	    else
-		InsertStringField(sf,ptr,true);
-	}
-    }
-
-    fclose(f);
-    return ERR_OK;
-}
-
-
-///////////////////////////////////////////////////////////////////////////////
-
-enumError SaveStringField
-	( StringField_t * sf, ccp filename, bool rm_if_empty )
-{
-    ASSERT(sf);
-    ASSERT(filename);
-    ASSERT(*filename);
-
-    TRACE("SaveStringField(%p,%s,%d)\n",sf,filename,rm_if_empty);
-
-    if ( !sf->used && rm_if_empty )
-    {
-	unlink(filename);
-	return ERR_OK;
-    }
-    FILE * f = fopen(filename,"wb");
-    if (!f)
-	return ERROR1(ERR_CANT_CREATE,"Can't create file: %s\n",filename);
-
-    ccp *ptr = sf->field, *end;
-    for ( end = ptr + sf->used; ptr < end; ptr++ )
-	fprintf(f,"%s\n",*ptr);
-    fclose(f);
-    return ERR_OK;
-}
-
 //
 ///////////////////////////////////////////////////////////////////////////////
-///////////////			ParamField_t			///////////////
+///////////////			WiiParamField_t			///////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-void InitializeParamField ( ParamField_t * pf, ParamFieldType_t pft )
+void InitializeWiiParamField ( WiiParamField_t * pf, WiiParamFieldType_t pft )
 {
     DASSERT(pf);
     memset(pf,0,sizeof(*pf));
@@ -4024,40 +2580,40 @@ void InitializeParamField ( ParamField_t * pf, ParamFieldType_t pft )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ResetParamField ( ParamField_t * pf )
+void ResetWiiParamField ( WiiParamField_t * pf )
 {
     ASSERT(pf);
     if ( pf && pf->used > 0 )
     {
 	ASSERT(pf->list);
-	ParamFieldItem_t *ptr = pf->list, *end;
+	WiiParamFieldItem_t *ptr = pf->list, *end;
 	for ( end = ptr + pf->used; ptr < end; ptr++ )
 	    FreeString(ptr->key);
 	FREE(pf->list);
     }
-    InitializeParamField(pf,pf->pft);
+    InitializeWiiParamField(pf,pf->pft);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void MoveParamField ( ParamField_t * dest, ParamField_t * src )
+void MoveWiiParamField ( WiiParamField_t * dest, WiiParamField_t * src )
 {
     DASSERT(src);
     DASSERT(dest);
     if ( src != dest )
     {
-	ResetParamField(dest);
+	ResetWiiParamField(dest);
 	dest->list = src->list;
 	dest->used = src->used;
 	dest->size = src->size;
 	dest->pft  = src->pft;
-	InitializeParamField(src,src->pft);
+	InitializeWiiParamField(src,src->pft);
     }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-static uint FindParamFieldHelper ( const ParamField_t * pf, bool * p_found, ccp key )
+static uint FindWiiParamFieldHelper ( const WiiParamField_t * pf, bool * p_found, ccp key )
 {
     ASSERT(pf);
 
@@ -4075,7 +2631,7 @@ static uint FindParamFieldHelper ( const ParamField_t * pf, bool * p_found, ccp 
 		beg = idx + 1;
 	    else
 	    {
-		TRACE("FindParamFieldHelper(%s) FOUND=%d/%d/%d\n",
+		TRACE("FindWiiParamFieldHelper(%s) FOUND=%d/%d/%d\n",
 			key, idx, pf->used, pf->size );
 		if (p_found)
 		    *p_found = true;
@@ -4084,7 +2640,7 @@ static uint FindParamFieldHelper ( const ParamField_t * pf, bool * p_found, ccp 
 	}
     }
 
-    TRACE("FindParamFieldHelper(%s) failed=%d/%d/%d\n",
+    TRACE("FindWiiParamFieldHelper(%s) failed=%d/%d/%d\n",
 		key, beg, pf->used, pf->size );
 
     if (p_found)
@@ -4094,25 +2650,25 @@ static uint FindParamFieldHelper ( const ParamField_t * pf, bool * p_found, ccp 
 
 ///////////////////////////////////////////////////////////////////////////////
 
-int FindParamFieldIndex ( const ParamField_t * pf, ccp key, int not_found_value )
+int FindWiiParamFieldIndex ( const WiiParamField_t * pf, ccp key, int not_found_value )
 {
     bool found;
-    const int idx = FindParamFieldHelper(pf,&found,key);
+    const int idx = FindWiiParamFieldHelper(pf,&found,key);
     return found ? idx : not_found_value;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ParamFieldItem_t * FindParamField ( const ParamField_t * pf, ccp key )
+WiiParamFieldItem_t * FindWiiParamField ( const WiiParamField_t * pf, ccp key )
 {
     bool found;
-    const int idx = FindParamFieldHelper(pf,&found,key);
+    const int idx = FindWiiParamFieldHelper(pf,&found,key);
     return found ? pf->list + idx : 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-static ParamFieldItem_t * InsertParamFieldHelper ( ParamField_t * pf, int idx )
+static WiiParamFieldItem_t * InsertWiiParamFieldHelper ( WiiParamField_t * pf, int idx )
 {
     DASSERT(pf);
     DASSERT( pf->used <= pf->size );
@@ -4123,7 +2679,7 @@ static ParamFieldItem_t * InsertParamFieldHelper ( ParamField_t * pf, int idx )
 	pf->list = REALLOC(pf->list,pf->size*sizeof(*pf->list));
     }
     DASSERT( idx <= pf->used );
-    ParamFieldItem_t * dest = pf->list + idx;
+    WiiParamFieldItem_t * dest = pf->list + idx;
     memmove(dest+1,dest,(pf->used-idx)*sizeof(*dest));
     pf->used++;
     memset(dest,0,sizeof(*dest));
@@ -4132,15 +2688,15 @@ static ParamFieldItem_t * InsertParamFieldHelper ( ParamField_t * pf, int idx )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool RemoveParamField ( ParamField_t * pf, ccp key )
+bool RemoveWiiParamField ( WiiParamField_t * pf, ccp key )
 {
     bool found;
-    uint idx = FindParamFieldHelper(pf,&found,key);
+    uint idx = FindWiiParamFieldHelper(pf,&found,key);
     if (found)
     {
 	pf->used--;
 	ASSERT( idx <= pf->used );
-	ParamFieldItem_t * dest = pf->list + idx;
+	WiiParamFieldItem_t * dest = pf->list + idx;
 	FREE((char*)dest);
 	memmove(dest,dest+1,(pf->used-idx)*sizeof(*dest));
     }
@@ -4149,9 +2705,9 @@ bool RemoveParamField ( ParamField_t * pf, ccp key )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ParamFieldItem_t * InsertParamField
+WiiParamFieldItem_t * InsertWiiParamField
 (
-    ParamField_t	* pf,		// valid param field
+    WiiParamField_t	* pf,		// valid param field
     ccp			key,		// key to insert
     uint		num		// value
 )
@@ -4160,14 +2716,14 @@ ParamFieldItem_t * InsertParamField
 	return 0;
 
     bool my_found;
-    const int idx = FindParamFieldHelper(pf,&my_found,key);
+    const int idx = FindWiiParamFieldHelper(pf,&my_found,key);
 
-    ParamFieldItem_t * item;
+    WiiParamFieldItem_t * item;
     if (my_found)
 	item = pf->list + idx;
     else
     {
-	item = InsertParamFieldHelper(pf,idx);
+	item = InsertWiiParamFieldHelper(pf,idx);
 	item->key = STRDUP(key);
     }
 
@@ -4182,10 +2738,10 @@ ParamFieldItem_t * InsertParamField
 
 ///////////////////////////////////////////////////////////////////////////////
 
-enumError LoadParamField
+enumError LoadWiiParamField
 (
-    ParamField_t	* pf,		// param field
-    ParamFieldType_t	init_pf,	// >0: initialize 'pf' with entered type
+    WiiParamField_t	* pf,		// param field
+    WiiParamFieldType_t	init_pf,	// >0: initialize 'pf' with entered type
     ccp			filename,	// filename of source file
     bool		silent		// true: don't print open/read errors
 )
@@ -4194,10 +2750,10 @@ enumError LoadParamField
     ASSERT(filename);
     ASSERT(*filename);
 
-    TRACE("LoadParamField(%p,%d,%s,%d)\n",pf,init_pf,filename,silent);
+    TRACE("LoadWiiParamField(%p,%d,%s,%d)\n",pf,init_pf,filename,silent);
 
     if (init_pf)
-	InitializeParamField(pf,init_pf);
+	InitializeWiiParamField(pf,init_pf);
 
     FILE * f = fopen(filename,"rb");
     if (!f)
@@ -4234,7 +2790,7 @@ enumError LoadParamField
 	if ( key < ptr )
 	{
 	    *ptr = 0;
-	    InsertParamField(pf,key,num);
+	    InsertWiiParamField(pf,key,num);
 	}
     }
 
@@ -4244,9 +2800,9 @@ enumError LoadParamField
 
 ///////////////////////////////////////////////////////////////////////////////
 
-enumError SaveParamField
+enumError SaveWiiParamField
 (
-    ParamField_t	* pf,		// valid param field
+    WiiParamField_t	* pf,		// valid param field
     ccp			filename,	// filename of dest file
     bool		rm_if_empty	// true: rm dest file if 'pf' is empty
 )
@@ -4255,7 +2811,7 @@ enumError SaveParamField
     ASSERT(filename);
     ASSERT(*filename);
 
-    TRACE("SaveParamField(%p,%s,%d)\n",pf,filename,rm_if_empty);
+    TRACE("SaveWiiParamField(%p,%s,%d)\n",pf,filename,rm_if_empty);
 
     if ( !pf->used && rm_if_empty )
     {
@@ -4267,18 +2823,18 @@ enumError SaveParamField
     if (!f)
 	return ERROR1(ERR_CANT_CREATE,"Can't create file: %s\n",filename);
 
-    enumError err = WriteParamField(f,filename,pf,0,0,0);
+    enumError err = WriteWiiParamField(f,filename,pf,0,0,0);
     fclose(f);
     return err;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-enumError WriteParamField
+enumError WriteWiiParamField
 (
     FILE		* f,		// open destination file
     ccp			filename,	// NULL or filename (needed on write error)
-    ParamField_t	* pf,		// valid param field
+    WiiParamField_t	* pf,		// valid param field
     ccp			line_prefix,	// not NULL: insert prefix before each line
     ccp			key_prefix,	// not NULL: insert prefix before each key
     ccp			eol		// end of line text (if NULL: use LF)
@@ -4290,7 +2846,7 @@ enumError WriteParamField
 	eol = "\n";
 
     uint max_num = 0;
-    ParamFieldItem_t *ptr, *end = pf->list + pf->used;
+    WiiParamFieldItem_t *ptr, *end = pf->list + pf->used;
     for ( ptr = pf->list; ptr < end; ptr++ )
     {
 	if ( ptr->num && pf->pft == PFT_ALIGN )
@@ -4515,6 +3071,21 @@ void AtExpandAllParam ( ParamList_t ** p_param )
 	    AtExpandParam(p_param);
 }
 
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+void InsertDiscMemMap
+(
+	MemMap_t	* mm,		// valid memore map pointer
+	wd_disc_t	* disc		// valid disc pointer
+)
+{
+    noTRACE("InsertDiscMemMap(%p,%p)\n",mm,disc);
+    DASSERT(mm);
+    DASSERT(disc);
+    wd_print_mem(disc,InsertMemMapWrapper,mm);
+}
+
 //
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////		     string substitutions		///////////////
@@ -4621,7 +3192,7 @@ char * SubstString
 		memcpy(tempbuf,start,count);
 		tempbuf[count] = 0;
 	    }
-	    dest = NormalizeFileName(dest,end,tempbuf,ptr->allow_slash);
+	    dest = NormalizeFileName(dest,end-dest,tempbuf,ptr->allow_slash,use_utf8);
 	}
 
     if (count)
@@ -4656,296 +3227,6 @@ bool HaveEscapeChar ( ccp string )
 		return true;
 	}
     return false;
-}
-
-//
-///////////////////////////////////////////////////////////////////////////////
-///////////////			    Memory Maps			///////////////
-///////////////////////////////////////////////////////////////////////////////
-
-void InitializeMemMap ( MemMap_t * mm )
-{
-    DASSERT(mm);
-    memset(mm,0,sizeof(*mm));
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void ResetMemMap ( MemMap_t * mm )
-{
-    DASSERT(mm);
-
-    uint i;
-    if (mm->field)
-    {
-	for ( i = 0; i < mm->used; i++ )
-	    FREE(mm->field[i]);
-	FREE(mm->field);
-    }
-    memset(mm,0,sizeof(*mm));
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-MemMapItem_t * FindMemMap ( MemMap_t * mm, off_t off, off_t size )
-{
-    DASSERT(mm);
-
-    off_t off_end = off + size;
-    int beg = 0;
-    int end = mm->used - 1;
-    while ( beg <= end )
-    {
-	uint idx = (beg+end)/2;
-	MemMapItem_t * mi = mm->field[idx];
-	if ( off_end <= mi->off )
-	    end = idx - 1 ;
-	else if ( off >= mi->off + mi->size )
-	    beg = idx + 1;
-	else
-	    return mi;
-    }
-    return 0;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-uint InsertMemMapIndex
-(
-    // returns the index of the new item
-
-    MemMap_t		* mm,		// mem map pointer
-    off_t		off,		// offset of area
-    off_t		size		// size of area
-)
-{
-    DASSERT(mm);
-    uint idx = FindMemMapHelper(mm,off,size);
-
-    DASSERT( mm->used <= mm->size );
-    if ( mm->used == mm->size )
-    {
-	mm->size += 64;
-	mm->field = REALLOC(mm->field,mm->size*sizeof(*mm->field));
-    }
-
-    DASSERT( idx <= mm->used );
-    MemMapItem_t ** dest = mm->field + idx;
-    memmove(dest+1,dest,(mm->used-idx)*sizeof(MemMapItem_t*));
-    mm->used++;
-
-    MemMapItem_t * mi = MALLOC(sizeof(MemMapItem_t));
-    mi->off  = off;
-    mi->size = size;
-    mi->overlap = 0;
-    *dest = mi;
-    return idx;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-MemMapItem_t * InsertMemMap
-(
-    // returns a pointer to a new item (never NULL)
-
-    MemMap_t		* mm,		// mem map pointer
-    off_t		off,		// offset of area
-    off_t		size		// size of area
-)
-{
-    const uint idx = InsertMemMapIndex(mm,off,size);
-    // a C sequence point is important here
-    return mm->field[idx];
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-static bool TieMemMap 
-(
-    // returns true if element are tied togehther
-
-    MemMap_t		* mm,		// mem map pointer
-    uint		idx,		// tie element 'idx' and 'idx+1'
-    bool		force		// always tie and not only if overlapped
-)
-{
-    DASSERT(mm);
-    DASSERT( idx+1 < mm->used );
-
-    MemMapItem_t * i1 = mm->field[idx];
-    MemMapItem_t * i2 = mm->field[idx+1];
-    if ( force || i1->off + i1->size >= i2->off )
-    {
-	const off_t new_size = i2->off + i2->size - i1->off;
-	if ( i1->size < new_size )
-	     i1->size = new_size;
-	FREE(i2);
-	idx++;
-	mm->used--;
-	memmove( mm->field + idx,
-		 mm->field + idx + 1,
-		 ( mm->used - idx ) * sizeof(MemMapItem_t*) );
-
-	return true;
-    }
-    return false;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-MemMapItem_t * InsertMemMapTie
-(
-    // returns a pointer to a new or existing item (never NULL)
-
-    MemMap_t		* mm,		// mem map pointer
-    off_t		off,		// offset of area
-    off_t		size		// size of area
-)
-{
-    uint idx = InsertMemMapIndex(mm,off,size);
-
-    if ( idx > 0 && TieMemMap(mm,idx-1,false) )
-	idx--;
-
-    while ( idx + 1 < mm->used && TieMemMap(mm,idx,false) )
-	;
-
-    return mm->field[idx];
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void InsertMemMapWrapper
-(
-	void		* param,	// user defined parameter
-	u64		offset,		// offset of object
-	u64		size,		// size of object
-	ccp		info		// info about object
-)
-{
-    noTRACE("InsertMemMapWrapper(%p,%llx,%llx,%s)\n",param,offset,size,info);
-    DASSERT(param);
-    MemMapItem_t * mi = InsertMemMap(param,offset,size);
-    StringCopyS(mi->info,sizeof(mi->info),info);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void InsertDiscMemMap
-(
-	MemMap_t	* mm,		// valid memore map pointer
-	wd_disc_t	* disc		// valid disc pointer
-)
-{
-    noTRACE("InsertDiscMemMap(%p,%p)\n",mm,disc);
-    DASSERT(mm);
-    DASSERT(disc);
-    wd_print_mem(disc,InsertMemMapWrapper,mm);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-uint FindMemMapHelper ( MemMap_t * mm, off_t off, off_t size )
-{
-    DASSERT(mm);
-
-    int beg = 0;
-    int end = mm->used - 1;
-    while ( beg <= end )
-    {
-	uint idx = (beg+end)/2;
-	MemMapItem_t * mi = mm->field[idx];
-	if ( off < mi->off )
-	    end = idx - 1 ;
-	else if ( off > mi->off )
-	    beg = idx + 1;
-	else if ( size < mi->size )
-	    end = idx - 1 ;
-	else if ( size > mi->size )
-	    beg = idx + 1;
-	else
-	{
-	    TRACE("FindMemMapHelper(%llx,%llx) FOUND=%d/%d/%d\n",
-		    (u64)off, (u64)size, idx, mm->used, mm->size );
-	    return idx;
-	}
-    }
-
-    TRACE("FindStringFieldHelper(%llx,%llx) failed=%d/%d/%d\n",
-		(u64)off, (u64)size, beg, mm->used, mm->size );
-    return beg;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-uint CalcOverlapMemMap ( MemMap_t * mm )
-{
-    DASSERT(mm);
-
-    uint i, count = 0;
-    MemMapItem_t * prev = 0;
-    for ( i = 0; i < mm->used; i++ )
-    {
-	MemMapItem_t * ptr = mm->field[i];
-	ptr->overlap = 0;
-	if ( prev && ptr->off < prev->off + prev->size )
-	{
-	    ptr ->overlap |= 1;
-	    prev->overlap |= 2;
-	    count++;
-	}
-	prev = ptr;
-    }
-    return count;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void PrintMemMap ( MemMap_t * mm, FILE * f, int indent, ccp info_head )
-{
-    DASSERT(mm);
-    if ( !f || !mm->used )
-	return;
-
-    CalcOverlapMemMap(mm);
-    indent = NormalizeIndent(indent);
-
-    static char ovl[][3] = { "  ", "!.", ".!", "!!" };
-
-    if (!info_head)
-	info_head = "info";
-    int i, max_ilen = strlen(info_head);
-    for ( i = 0; i < mm->used; i++ )
-    {
-	MemMapItem_t * ptr = mm->field[i];
-	ptr->info[sizeof(ptr->info)-1] = 0;
-	const int ilen = strlen(ptr->info);
-	if ( max_ilen < ilen )
-	    max_ilen = ilen;
-    }
-
-    fprintf(f,"%*s      unused :  off(beg) ..  off(end) :      size : %s\n%*s%.*s\n",
-	    indent, "", info_head,
-	    indent, "", max_ilen+52, wd_sep_200 );
-
-    off_t max_end = mm->begin;
-    for ( i = 0; i < mm->used; i++ )
-    {
-	MemMapItem_t * ptr = mm->field[i];
-	if ( !i && max_end > ptr->off )
-	    max_end = ptr->off;
-	const off_t end = ptr->off + ptr->size;
-	if ( ptr->off > max_end )
-	    fprintf(f,"%*s%s%10llx :%10llx ..%10llx :%10llx : %s\n",
-		indent, "", ovl[ptr->overlap&3], (u64)( ptr->off - max_end ),
-		(u64)ptr->off, (u64)end, (u64)ptr->size, ptr->info );
-	else
-	    fprintf(f,"%*s%s           :%10llx ..%10llx :%10llx : %s\n",
-		indent, "", ovl[ptr->overlap&3],
-		(u64)ptr->off, (u64)end, (u64)ptr->size, ptr->info );
-	if ( max_end < end )
-	    max_end = end;
-    }
 }
 
 //
@@ -5281,213 +3562,6 @@ size_t ReadDataList // returns number of writen bytes
 
 //
 ///////////////////////////////////////////////////////////////////////////////
-///////////////			random mumbers			///////////////
-///////////////////////////////////////////////////////////////////////////////
-// thanx to Donald Knuth
-
-const u32 RANDOM32_C_ADD = 2 * 197731421; // 2 Primzahlen
-const u32 RANDOM32_COUNT_BASE = 4294967; // Primzahl == ~UINT_MAX32/1000;
-
-static int random32_a_index = -1;	// Index in die a-Tabelle
-static u32 random32_count = 1;		// Abwaerts-Zähler bis zum Wechsel von a,c
-static u32 random32_a,
-	   random32_c,
-	   random32_X;			// Die letzten Werte
-
-static u32 random32_a_tab[] =		// Init-Tabelle
-{
-    0xbb40e62d, 0x3dc8f2f5, 0xdc024635, 0x7a5b6c8d,
-    0x583feb95, 0x91e06dbd, 0xa7ec03f5, 0
-};
-
-//-----------------------------------------------------------------------------
-
-u32 Random32 ( u32 max )
-{
-    if (!--random32_count)
-    {
-	// Neue Berechnung von random32_a und random32_c faellig
-
-	if ( random32_a_index < 0 )
-	{
-	    // allererste Initialisierung auf Zeitbasis
-	    Seed32Time();
-	}
-	else
-	{
-	    random32_c += RANDOM32_C_ADD;
-	    random32_a = random32_a_tab[++random32_a_index];
-	    if (!random32_a)
-	    {
-		random32_a_index = 0;
-		random32_a = random32_a_tab[0];
-	    }
-
-	    random32_count = RANDOM32_COUNT_BASE;
-	}
-    }
-
-    // Jetzt erfolgt die eigentliche Berechnung
-
-    random32_X = random32_a * random32_X + random32_c;
-
-    if (!max)
-	return random32_X;
-
-    return ( (u64)max * random32_X ) >> 32;
-}
-
-//-----------------------------------------------------------------------------
-
-u64 Seed32Time ()
-{
-    struct timeval tval;
-    gettimeofday(&tval,NULL);
-    const u64 random_time_bits = (u64) tval.tv_usec << 16 ^ tval.tv_sec;
-    return Seed32( ( random_time_bits ^ getpid() ) * 197731421u );
-}
-
-//-----------------------------------------------------------------------------
-
-u64 Seed32 ( u64 base )
-{
-    uint a_tab_len = 0;
-    while (random32_a_tab[a_tab_len])
-	a_tab_len++;
-    const u32 base32 = base / a_tab_len;
-
-    random32_a_index	= base % a_tab_len;
-    random32_a		= random32_a_tab[random32_a_index];
-    random32_c		= ( base32 & 15 ) * RANDOM32_C_ADD + 1;
-    random32_X		= base32 ^ ( base >> 32 );
-    random32_count	= RANDOM32_COUNT_BASE;
-
-    return base;
-}
-
-//-----------------------------------------------------------------------------
-
-void RandomFill ( void * buf, size_t size )
-{
-    size_t xsize = size / sizeof(u32);
-    if (xsize)
-    {
-	size -= xsize * sizeof(u32);
-	u32 * ptr = buf;
-	while ( xsize-- > 0 )
-	    *ptr++ = Random32(0);
-	buf = ptr;
-    }
-
-    u8 * ptr = buf;
-    while ( size-- > 0 )
-	*ptr++ = Random32(0);
-}
-
-//
-///////////////////////////////////////////////////////////////////////////////
-///////////////			    bit handling		///////////////
-///////////////////////////////////////////////////////////////////////////////
-
-const uchar TableBitCount[0x100] =
-{
-	0,1,1,2, 1,2,2,3, 1,2,2,3, 2,3,3,4,
-	1,2,2,3, 2,3,3,4, 2,3,3,4, 3,4,4,5,
-	1,2,2,3, 2,3,3,4, 2,3,3,4, 3,4,4,5,
-	2,3,3,4, 3,4,4,5, 3,4,4,5, 4,5,5,6,
-
-	1,2,2,3, 2,3,3,4, 2,3,3,4, 3,4,4,5,
-	2,3,3,4, 3,4,4,5, 3,4,4,5, 4,5,5,6,
-	2,3,3,4, 3,4,4,5, 3,4,4,5, 4,5,5,6,
-	3,4,4,5, 4,5,5,6, 4,5,5,6, 5,6,6,7,
-
-	1,2,2,3, 2,3,3,4, 2,3,3,4, 3,4,4,5,
-	2,3,3,4, 3,4,4,5, 3,4,4,5, 4,5,5,6,
-	2,3,3,4, 3,4,4,5, 3,4,4,5, 4,5,5,6,
-	3,4,4,5, 4,5,5,6, 4,5,5,6, 5,6,6,7,
-
-	2,3,3,4, 3,4,4,5, 3,4,4,5, 4,5,5,6,
-	3,4,4,5, 4,5,5,6, 4,5,5,6, 5,6,6,7,
-	3,4,4,5, 4,5,5,6, 4,5,5,6, 5,6,6,7,
-	4,5,5,6, 5,6,6,7, 5,6,6,7, 6,7,7,8
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-uint Count1Bits ( const void * data, size_t len )
-{
-    uint count = 0;
-    const uchar * d = data;
-    while ( len-- > 0 )
-	count += TableBitCount[*d++];
-    return count;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-uint Count1Bits8 ( u8 data )
-{
-    return TableBitCount[data];
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-uint Count1Bits16 ( u16 data )
-{
-    const u8 * d = (u8*)&data;
-    return TableBitCount[d[0]]
-	 + TableBitCount[d[1]];
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-uint Count1Bits32 ( u32 data )
-{
-    const u8 * d = (u8*)&data;
-    return TableBitCount[d[0]]
-	 + TableBitCount[d[1]]
-	 + TableBitCount[d[2]]
-	 + TableBitCount[d[3]];
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-uint Count1Bits64 ( u64 data )
-{
-    const u8 * d = (u8*)&data;
-    return TableBitCount[d[0]]
-	 + TableBitCount[d[1]]
-	 + TableBitCount[d[2]]
-	 + TableBitCount[d[3]]
-	 + TableBitCount[d[4]]
-	 + TableBitCount[d[5]]
-	 + TableBitCount[d[6]]
-	 + TableBitCount[d[7]];
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-int FindLowest1Bit64 ( u64 data )
-{
-    if (!data)
-	return -1;
-
-    uint index;
-    for ( index = 0; !(data&1); data >>= 1, index++ )
-	;
-    return index;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-u64 GetAlign64 ( u64 data )
-{
-    const int index = FindLowest1Bit64 (data);
-    return index < 0 ? 0 : 1 << index;
-}
-
-//
-///////////////////////////////////////////////////////////////////////////////
 ///////////////			    etc				///////////////
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -5530,7 +3604,7 @@ int ScanPreallocMode ( ccp arg )
 	return 0;
     }
 
-    static const CommandTab_t tab[] =
+    static const KeywordTab_t tab[] =
     {
 	{ PREALLOC_OFF,		"OFF",		"0",	0 },
 	{ PREALLOC_SMART,	"SMART",	"1",	0 },
@@ -5539,7 +3613,7 @@ int ScanPreallocMode ( ccp arg )
 	{ 0,0,0,0 }
     };
 
-    const CommandTab_t * cmd = ScanCommand(0,arg,tab);
+    const KeywordTab_t * cmd = ScanKeyword(0,arg,tab);
     if (cmd)
     {
      #ifdef NO_PREALLOC
@@ -5564,12 +3638,6 @@ char * AllocRealPath ( ccp source )
     char fname[PATH_MAX];
     realpath(source,fname);
     return STRDUP(fname);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void mark_used ( ccp name, ... )
-{
 }
 
 ///////////////////////////////////////////////////////////////////////////////

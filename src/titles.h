@@ -37,7 +37,7 @@
 #ifndef WIT_TITELS_H
 #define WIT_TITELS_H 1
 
-#include "types.h"
+#include "dclib/dclib-types.h"
 
 //
 ///////////////////////////////////////////////////////////////////////////////

@@ -37,7 +37,7 @@
 #ifndef WIT_LIB_GCZ_H
 #define WIT_LIB_GCZ_H 1
 
-#include "types.h"
+#include "dclib/dclib-types.h"
 #include "lib-std.h"
 
 //
@@ -143,12 +143,12 @@ void ResetGCZ ( GCZ_t *gcz );
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////			SuperFile_t interface		///////////////
 ///////////////////////////////////////////////////////////////////////////////
-// File_t level reading
+// WFile_t level reading
 
 enumError LoadHeadGCZ
 (
     GCZ_t		*gcz,		// pointer to data, will be initalized
-    File_t		*f		// file to read
+    WFile_t		*f		// file to read
 );
 
 //-----------------------------------------------------------------------------
@@ -156,7 +156,7 @@ enumError LoadHeadGCZ
 enumError LoadDataGCZ
 (
     GCZ_t		*gcz,		// pointer to data, will be initalized
-    File_t		*f,		// source file
+    WFile_t		*f,		// source file
     off_t		off,		// file offset
     void		*buf,		// destination buffer
     size_t		count		// number of bytes to read

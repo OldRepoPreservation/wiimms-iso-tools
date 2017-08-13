@@ -38,9 +38,9 @@
 
 #include <ctype.h>
 
-#include "debug.h"
+#include "dclib/dclib-debug.h"
 #include "version.h"
-#include "types.h"
+#include "dclib/dclib-types.h"
 #include "lib-std.h"
 #include "lib-sf.h"
 
@@ -105,16 +105,16 @@ static void print_title ( FILE * f )
 
 static void help_exit ( bool xmode )
 {
-    printf("%s%s\n",progname,TITLE);
+    fputs( TITLE "\n", stdout );
 
     if (xmode)
     {
 	int cmd;
 	for ( cmd = 0; cmd < CMD__N; cmd++ )
-	    PrintHelpCmd(&InfoUI,stdout,0,cmd, 0, cmd ? 0 : default_settings );
+	    PrintHelpCmd(&InfoUI_wdf,stdout,0,cmd,0,0,URI_HOME);
     }
     else
-	PrintHelpCmd(&InfoUI,stdout,0,0,"+HELP",default_settings);
+	PrintHelpCmd(&InfoUI_wdf,stdout,0,0,"HELP",0,URI_HOME);
 
     exit(ERR_OK);
 }
@@ -136,7 +136,7 @@ static void version_exit()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-static const CommandTab_t * current_command = 0;
+static const KeywordTab_t * current_command = 0;
 
 void hint_exit ( enumError stat )
 {
@@ -189,7 +189,7 @@ static enumError OpenOutput
 
     enumError err = CreateSF(fo,fname,create_oft,IOM_FORCE_STREAM,opt_overwrite);
     if ( !err && opt_split && GetFileMode(fo->f.st.st_mode) == FM_PLAIN )
-	err = SetupSplitFile(&fo->f,fo->iod.oft,opt_split_size);
+	err = SetupSplitWFile(&fo->f,fo->iod.oft,opt_split_size);
 
     TRACE("OpenOutput() returns %d\n",err);
     return err;
@@ -388,7 +388,7 @@ enumError CatWDF ( ccp fname, SuperFile_t * fo, ccp out_fname,
 
     SuperFile_t fi;
     InitializeSF(&fi);
-    enumError err = OpenFile(&fi.f,fname,IOM_IS_IMAGE);
+    enumError err = OpenWFile(&fi.f,fname,IOM_IS_IMAGE);
     if (err)
 	return err;
 
@@ -634,7 +634,7 @@ static int print_range ( FILE *f, ccp text, u64 end, u64 len )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-enumError ciso_dump ( FILE *f, CISO_Head_t * ch, File_t *df, ccp fname )
+enumError ciso_dump ( FILE *f, CISO_Head_t * ch, WFile_t *df, ccp fname )
 {
     ASSERT(ch);
     ASSERT(df);
@@ -643,7 +643,7 @@ enumError ciso_dump ( FILE *f, CISO_Head_t * ch, File_t *df, ccp fname )
     if (testmode)
     {
 	fprintf(f," - WOULD dump CISO %s\n",fname);
-	ResetFile(df,false);
+	ResetWFile(df,false);
 	return ERR_OK;
     }
 
@@ -727,13 +727,13 @@ enumError ciso_dump ( FILE *f, CISO_Head_t * ch, File_t *df, ccp fname )
 	putchar('\n');
     }
 
-    ResetFile(df,false);
+    ResetWFile(df,false);
     return ERR_OK;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-enumError wia_dump ( FILE *f, File_t *df, ccp fname )
+enumError wia_dump ( FILE *f, WFile_t *df, ccp fname )
 {
     ASSERT(df);
     ASSERT(fname);
@@ -741,7 +741,7 @@ enumError wia_dump ( FILE *f, File_t *df, ccp fname )
     if (testmode)
     {
 	fprintf(f," - WOULD dump WIA %s\n",fname);
-	ResetFile(df,false);
+	ResetWFile(df,false);
 	return ERR_OK;
     }
 
@@ -749,8 +749,8 @@ enumError wia_dump ( FILE *f, File_t *df, ccp fname )
 
     SuperFile_t sf;
     InitializeSF(&sf);
-    memcpy(&sf.f,df,sizeof(File_t));
-    InitializeFile(df);
+    memcpy(&sf.f,df,sizeof(WFile_t));
+    InitializeWFile(df);
     SetupReadWIA(&sf);
 
     wia_controller_t * wia = sf.wia;
@@ -892,7 +892,7 @@ enumError wia_dump ( FILE *f, File_t *df, ccp fname )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-enumError gcz_dump ( FILE *f, GCZ_Head_t * gh1, File_t *df, ccp fname )
+enumError gcz_dump ( FILE *f, GCZ_Head_t * gh1, WFile_t *df, ccp fname )
 {
     ASSERT(gh1);
     ASSERT(df);
@@ -901,7 +901,7 @@ enumError gcz_dump ( FILE *f, GCZ_Head_t * gh1, File_t *df, ccp fname )
     if (testmode)
     {
 	fprintf(f," - WOULD dump GCZ %s\n",fname);
-	ResetFile(df,false);
+	ResetWFile(df,false);
 	return ERR_OK;
     }
 
@@ -972,7 +972,7 @@ enumError gcz_dump ( FILE *f, GCZ_Head_t * gh1, File_t *df, ccp fname )
 	,ave, ave
 	);
 
-    ResetFile(df,false);
+    ResetWFile(df,false);
     return ERR_OK;
 }
 
@@ -1003,9 +1003,9 @@ enumError wdf_dump ( FILE *f, ccp fname )
 {
     ASSERT(fname);
 
-    File_t df;
-    InitializeFile(&df);
-    enumError err = OpenFile(&df,fname,IOM_IS_IMAGE);
+    WFile_t df;
+    InitializeWFile(&df);
+    enumError err = OpenWFile(&df,fname,IOM_IS_IMAGE);
     if (err)
 	return err;
 
@@ -1015,7 +1015,7 @@ enumError wdf_dump ( FILE *f, ccp fname )
     err = ReadAtF(&df,0,&wh,CISO_MAGIC_SIZE);
     if (err)
     {
-	ResetFile(&df,false);
+	ResetWFile(&df,false);
 	return err;
     }
 
@@ -1026,7 +1026,7 @@ enumError wdf_dump ( FILE *f, ccp fname )
 	err = ReadAtF(&df,CISO_MAGIC_SIZE,(char*)&ch+CISO_MAGIC_SIZE,sizeof(ch)-CISO_MAGIC_SIZE);
 	if (err)
 	{
-	    ResetFile(&df,false);
+	    ResetWFile(&df,false);
 	    return err;
 	}
 	return ciso_dump(f,&ch,&df,fname);
@@ -1040,7 +1040,7 @@ enumError wdf_dump ( FILE *f, ccp fname )
 	err = ReadAtF(&df,magic_size,(char*)&gh+magic_size,sizeof(gh)-magic_size);
 	if (err)
 	{
-	    ResetFile(&df,false);
+	    ResetWFile(&df,false);
 	    return err;
 	}
 	return gcz_dump(f,&gh,&df,fname);
@@ -1052,7 +1052,7 @@ enumError wdf_dump ( FILE *f, ccp fname )
     if (testmode)
     {
 	fprintf(f," - WOULD dump WDF  %s\n",fname);
-	ResetFile(&df,false);
+	ResetWFile(&df,false);
 	return ERR_OK;
     }
 
@@ -1064,7 +1064,7 @@ enumError wdf_dump ( FILE *f, ccp fname )
 			sizeof(wh)-CISO_MAGIC_SIZE);
     if (err)
     {
-	ResetFile(&df,false);
+	ResetWFile(&df,false);
 	return err;
     }
 
@@ -1083,7 +1083,7 @@ enumError wdf_dump ( FILE *f, ccp fname )
 
     if (memcmp(wh.magic,WDF_MAGIC,WDF_MAGIC_SIZE))
     {
-	ResetFile(&df,false);
+	ResetWFile(&df,false);
 	return ERROR0(ERR_WDF_INVALID,"Wrong magic: %s\n",fname);
     }
 
@@ -1149,14 +1149,14 @@ enumError wdf_dump ( FILE *f, ccp fname )
 
     if (ec)
     {
-	ResetFile(&df,false);
+	ResetWFile(&df,false);
 	return ERROR0(ERR_WDF_INVALID,"Invalid data: %s\n",fname);
     }
  #endif
 
     if ( wh.chunk_n > 1000000 )
     {
-	ResetFile(&df,false);
+	ResetWFile(&df,false);
 	return ERROR0(ERR_INTERNAL,"Too many chunk entries: %s\n",fname);
     }
 
@@ -1171,7 +1171,7 @@ enumError wdf_dump ( FILE *f, ccp fname )
     err = ReadAtF(&df,wh.chunk_off,magic,sizeof(magic));
     if (err)
     {
-	ResetFile(&df,false);
+	ResetWFile(&df,false);
 	return ERROR0(ERR_READ_FAILED,"ReadF error: %s\n",fname);
     }
     mi = InsertMemMap(&mm,wh.chunk_off,sizeof(magic));
@@ -1179,7 +1179,7 @@ enumError wdf_dump ( FILE *f, ccp fname )
 
     if (memcmp(magic,WDF_MAGIC,WDF_MAGIC_SIZE))
     {
-	ResetFile(&df,false);
+	ResetWFile(&df,false);
 	return ERROR0(ERR_WDF_INVALID,"Wrong chunk table magic: %s\n",fname);
     }
 
@@ -1187,7 +1187,7 @@ enumError wdf_dump ( FILE *f, ccp fname )
     err = ReadF(&df,wc_data,chunk_table_size);
     if (err)
     {
-	ResetFile(&df,false);
+	ResetWFile(&df,false);
 	FREE(wc_data);
 	return ERROR0(ERR_READ_FAILED,"Can't read chunk table: %s\n",fname);
     }
@@ -1224,13 +1224,13 @@ enumError wdf_dump ( FILE *f, ccp fname )
 	eof = max_data;
 
     if ( eof > df.st.st_size )
-	SetupSplitFile(&df,OFT_WDF2,eof);
+	SetupSplitWFile(&df,OFT_WDF2,eof);
 
     char ch;
     err = ReadAtF(&df,max_data-1,&ch,1);
     if (err)
     {
-	ResetFile(&df,false);
+	ResetWFile(&df,false);
 	FREE(wc_data);
 	return ERROR0(ERR_READ_FAILED,"Can't read last data byte: %s\n",fname);
     }
@@ -1285,7 +1285,7 @@ enumError wdf_dump ( FILE *f, ccp fname )
     }
 
     FREE(wc_data);
-    ResetFile(&df,false);
+    ResetWFile(&df,false);
     return ERR_OK;
 }
 
@@ -1319,7 +1319,7 @@ enumError CheckOptions ( int argc, char ** argv )
       if ( opt_stat == -1 )
 	break;
 
-      RegisterOptionByName(&InfoUI,opt_stat,1,false);
+      RegisterOptionByName(&InfoUI_wdf,opt_stat,1,false);
 
       switch ((enumGetOpt)opt_stat)
       {
@@ -1332,6 +1332,9 @@ enumError CheckOptions ( int argc, char ** argv )
 	case GO_QUIET:		verbose = verbose > -1 ? -1 : verbose - 1; break;
 	case GO_VERBOSE:	verbose = verbose <  0 ?  0 : verbose + 1; break;
 	case GO_LOGGING:	logging++; break;
+	case GO_COLOR:		err += ScanOptColorize(0,optarg,0); break;
+	case GO_COLOR_256:	opt_colorize = COLMD_256_COLORS; break;
+	case GO_NO_COLOR:	opt_colorize = -1; break;
 	case GO_IO:		ScanIOMode(optarg); break;
 	case GO_DIRECT:		opt_direct++; break;
 	case GO_CHUNK:		opt_chunk = true; break;
@@ -1407,8 +1410,10 @@ enumError CheckOptions ( int argc, char ** argv )
 	    break;
       }
     }
+    SetupColors();
+
  #ifdef DEBUG
-    DumpUsedOptions(&InfoUI,TRACE_FILE,11);
+    DumpUsedOptions(&InfoUI_wdf,TRACE_FILE,11);
  #endif
 
     return err ? ERR_SYNTAX : ERR_OK;
@@ -1429,10 +1434,26 @@ enumError CheckCommand ( int argc, char ** argv )
     if ( argc > 0 && **argv == '+' )
     {
 	int cmd_stat;
-	const CommandTab_t * cmd_ct = ScanCommand(&cmd_stat,*argv,CommandTab);
+	ccp arg = *argv;
+	const KeywordTab_t * cmd_ct = ScanKeyword(&cmd_stat,arg,CommandTab);
+
+	if ( !cmd_ct && cmd_stat < 2 && toupper((int)arg[1]) == 'C' )
+	{
+	    char abuf[20];
+	    abuf[0] = '+';
+	    StringCopyS(abuf+1,sizeof(abuf)-1,arg[2] == '-' ? arg+3 : arg+2 );
+	    cmd_ct = ScanKeyword(&cmd_stat,abuf,CommandTab);
+	    if (cmd_ct)
+	    {
+		if (!opt_colorize)
+		    opt_colorize = COLMD_ON;
+		SetupColors();
+	    }
+	}
+
 	if (!cmd_ct)
 	{
-	    PrintCommandError(CommandTab,*argv,cmd_stat,0);
+	    PrintKeywordError(CommandTab,*argv,cmd_stat,0,0);
 	    hint_exit(ERR_SYNTAX);
 	}
 
@@ -1445,7 +1466,7 @@ enumError CheckCommand ( int argc, char ** argv )
     }
     else
     {
-	const CommandTab_t * cmd_ct;
+	const KeywordTab_t * cmd_ct;
 	for ( cmd_ct = CommandTab; cmd_ct->name1; cmd_ct++ )
 	    if ( cmd_ct->id == the_cmd )
 	    {
@@ -1456,7 +1477,7 @@ enumError CheckCommand ( int argc, char ** argv )
 
     if (current_command)
     {
-	enumError err = VerifySpecificOptions(&InfoUI,current_command);
+	enumError err = VerifySpecificOptions(&InfoUI_wdf,current_command);
 	if (err)
 	    hint_exit(err);
     }
@@ -1468,7 +1489,9 @@ enumError CheckCommand ( int argc, char ** argv )
     switch (the_cmd)
     {
 	case CMD_VERSION:	version_exit();
-	case CMD_HELP:		PrintHelp(&InfoUI,stdout,0,"+HELP",default_settings); break;
+	case CMD_HELP:		PrintHelp(&InfoUI_wdf,stdout,0,"+HELP",default_settings,
+					URI_HOME, first_param ? first_param->arg : 0 );
+				break;
 
 	case CMD_PACK:		err = cmd_pack(); break;
 	case CMD_UNPACK:	err = cmd_unpack(); break;

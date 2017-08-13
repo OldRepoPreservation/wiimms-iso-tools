@@ -278,7 +278,7 @@ static SRes sz_read_buf ( void *pp, void *buf, size_t *size )
 typedef struct sz_outfile_t
 {
     ISeqOutStream	func;
-    File_t		* file;
+    WFile_t		* file;
     u32			bytes_written;
 
 } sz_outfile_t;
@@ -573,7 +573,7 @@ enumError DecLZMA_File2Buf // open + read + close lzma stream
 {
     DASSERT(buf);
     DASSERT(file);
-    File_t * f = &file->f;
+    WFile_t * f = &file->f;
 
  #if LOG_ALLOC
      alloc_count = 0;
@@ -924,7 +924,7 @@ enumError DecLZMA2_File2Buf // open + read + close lzma stream
 {
     DASSERT(buf);
     DASSERT(file);
-    File_t * f = &file->f;
+    WFile_t * f = &file->f;
 
  #if LOG_ALLOC
      alloc_count = 0;

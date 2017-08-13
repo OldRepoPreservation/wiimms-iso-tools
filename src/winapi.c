@@ -37,7 +37,7 @@
 #define _GNU_SOURCE 1
 
 #include "winapi.h"
-#include "debug.h"
+#include "dclib/dclib-debug.h"
 #include "io.h"
 #include <w32api/windows.h>
 //#include <w32api/winioctl.h>

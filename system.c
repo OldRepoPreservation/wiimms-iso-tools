@@ -34,18 +34,11 @@
  *                                                                         *
  ***************************************************************************/
 
-#include <stdio.h>
-#include "src/system.h"
+#include "dclib/dclib-system.h"
 
 int main ( int argc, char ** argv )
 {
-    printf(
-	"SYSTEM\t\t:= %s\n"
-	"SYSTEMID\t:= 0x%x\n"
- #ifdef SYSTEM_LINUX
-	"SYSTEM_LINUX\t:= 1\n"
- #endif
-	, SYSTEM, SYSTEMID );
+    dclibPrintSystem(stdout);
     return 0;
 }
 

@@ -36,7 +36,7 @@
 
 #define _GNU_SOURCE 1
 
-#include "debug.h"
+#include "dclib/dclib-debug.h"
 #include "dclib-utf8.h"
 #include <limits.h>
 

@@ -37,7 +37,7 @@
 #ifndef __LIBDC_UTF8_H
 #define __LIBDC_UTF8_H 1
 
-#include "types.h"
+#include "dclib/dclib-types.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 /////   this software is taken from dcLib2 and now publiced under GPL2.   /////

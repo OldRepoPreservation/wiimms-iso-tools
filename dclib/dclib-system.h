@@ -1,22 +1,20 @@
 
 /***************************************************************************
- *                    __            __ _ ___________                       *
- *                    \ \          / /| |____   ____|                      *
- *                     \ \        / / | |    | |                           *
- *                      \ \  /\  / /  | |    | |                           *
- *                       \ \/  \/ /   | |    | |                           *
- *                        \  /\  /    | |    | |                           *
- *                         \/  \/     |_|    |_|                           *
  *                                                                         *
- *                           Wiimms ISO Tools                              *
- *                         http://wit.wiimm.de/                            *
+ *                     _____     ____                                      *
+ *                    |  __ \   / __ \   _     _ _____                     *
+ *                    | |  \ \ / /  \_\ | |   | |  _  \                    *
+ *                    | |   \ \| |      | |   | | |_| |                    *
+ *                    | |   | || |      | |   | |  ___/                    *
+ *                    | |   / /| |   __ | |   | |  _  \                    *
+ *                    | |__/ / \ \__/ / | |___| | |_| |                    *
+ *                    |_____/   \____/  |_____|_|_____/                    *
+ *                                                                         *
+ *                       Wiimms source code library                        *
  *                                                                         *
  ***************************************************************************
  *                                                                         *
- *   This file is part of the WIT project.                                 *
- *   Visit http://wit.wiimm.de/ for project details and sources.           *
- *                                                                         *
- *   Copyright (c) 2009-2017 by Dirk Clemens <wiimm@wiimm.de>              *
+ *        Copyright (c) 2012-2017 by Dirk Clemens <wiimm@wiimm.de>         *
  *                                                                         *
  ***************************************************************************
  *                                                                         *
@@ -34,8 +32,10 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef WIT_SYSTEM_H
-#define WIT_SYSTEM_H 1
+#ifndef DCLIB_SYSTEM_H
+#define DCLIB_SYSTEM_H 1
+
+#include <stdio.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -83,5 +83,19 @@ typedef enum enumSystemID
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#endif // WIT_SYSTEM_H 1
+static inline void dclibPrintSystem ( FILE * f )
+{
+    fprintf(f,
+	"SYSTEM\t\t:= %s\n"
+	"SYSTEMID\t:= 0x%x\n"
+  #ifdef SYSTEM_LINUX
+	"SYSTEM_LINUX\t:= 1\n"
+  #endif
+	,SYSTEM
+	,SYSTEMID );
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+#endif // DCLIB_SYSTEM_H 1
 

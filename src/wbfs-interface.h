@@ -39,7 +39,7 @@
 
 #include <stdio.h>
 
-#include "types.h"
+#include "dclib/dclib-types.h"
 #include "lib-sf.h"
 #include "iso-interface.h"
 
@@ -275,7 +275,7 @@ typedef struct AWData_t
 
 //-----------------------------------------------------------------------------
 
-int AnalyzeWBFS      ( AWData_t * ad, File_t * f );
+int AnalyzeWBFS      ( AWData_t * ad, WFile_t * f );
 int PrintAnalyzeWBFS
 (
     FILE		* out,		// valid output stream

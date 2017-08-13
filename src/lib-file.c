@@ -285,9 +285,9 @@ enumError StatFile ( struct stat * st, ccp fname, int fd )
 ///////////////////////////////////////////////////////////////////////////////
 // initialize, reset and close files
 
-void InitializeFile ( File_t * f )
+void InitializeWFile ( WFile_t * f )
 {
-    TRACE("#F# InitializeFile(%p)\n",f);
+    TRACE("#F# InitializeWFile(%p)\n",f);
     ASSERT(f);
     ASSERT(ERR_OK==0);
 
@@ -309,11 +309,11 @@ void InitializeFile ( File_t * f )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-enumError XResetFile ( XPARM File_t * f, bool remove_file )
+enumError XResetWFile ( XPARM WFile_t * f, bool remove_file )
 {
-    TRACE("#F# ResetFile(%p,%d)\n",f,remove_file);
+    TRACE("#F# ResetWFile(%p,%d)\n",f,remove_file);
     ASSERT(f);
-    enumError stat = XClearFile( XCALL f, remove_file );
+    enumError stat = XClearWFile( XCALL f, remove_file );
 
     // save user settungs
     const bool open_flags		= f->open_flags;
@@ -322,7 +322,7 @@ enumError XResetFile ( XPARM File_t * f, bool remove_file )
     const bool allow_direct_io		= f->allow_direct_io;
     const int  already_created_mode	= f->already_created_mode;
 
-    InitializeFile(f);
+    InitializeWFile(f);
 
     // restore user settings
     f->open_flags		= open_flags;
@@ -336,18 +336,18 @@ enumError XResetFile ( XPARM File_t * f, bool remove_file )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-enumError XClearFile ( XPARM File_t * f, bool remove_file )
+enumError XClearWFile ( XPARM WFile_t * f, bool remove_file )
 {
     ASSERT(f);
-    TRACE("#F# ClearFile(%p,%d) fd=%d fp=%p\n",f,remove_file,f->fd,f->fp);
+    TRACE("#F# ClearWFile(%p,%d) fd=%d fp=%p\n",f,remove_file,f->fd,f->fp);
 
     enumError err = ERR_OK;
     if (f->split_f)
     {
-	File_t **end, **ptr = f->split_f;
+	WFile_t **end, **ptr = f->split_f;
 	for ( end = ptr + f->split_used; ptr < end; ptr++ )
 	{
-	    enumError err1 = XClearFile( XCALL *ptr, remove_file );
+	    enumError err1 = XClearWFile( XCALL *ptr, remove_file );
 	    FREE(*ptr);
 	    if ( err < err1 )
 		err = err1;
@@ -358,7 +358,7 @@ enumError XClearFile ( XPARM File_t * f, bool remove_file )
     };
     f->split_used = 0;
 
-    enumError err1 = XCloseFile( XCALL f, remove_file );
+    enumError err1 = XCloseWFile( XCALL f, remove_file );
     if ( err < err1 )
 	err = err1;
 
@@ -381,10 +381,10 @@ enumError XClearFile ( XPARM File_t * f, bool remove_file )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-enumError XCloseFile ( XPARM File_t * f, bool remove_file )
+enumError XCloseWFile ( XPARM WFile_t * f, bool remove_file )
 {
     DASSERT(f);
-    TRACE("#F# CloseFile(%p,%d) fd=%d fp=%p\n",f,remove_file,f->fd,f->fp);
+    TRACE("#F# CloseWFile(%p,%d) fd=%d fp=%p\n",f,remove_file,f->fd,f->fp);
 
     //----- pralloc support
 
@@ -421,11 +421,11 @@ enumError XCloseFile ( XPARM File_t * f, bool remove_file )
 
     if (f->split_f)
     {
-	File_t **end, **ptr = f->split_f;
+	WFile_t **end, **ptr = f->split_f;
 	for ( end = ptr + f->split_used; ptr < end; ptr++ )
 	{
 	    TRACE("#S#%zd# close %s\n",ptr-f->split_f,(*ptr)->fname);
-	    enumError err1 = XCloseFile( XCALL *ptr, remove_file );
+	    enumError err1 = XCloseWFile( XCALL *ptr, remove_file );
 	    if ( err < err1 )
 		err = err1;
 	}
@@ -477,7 +477,7 @@ enumError XCloseFile ( XPARM File_t * f, bool remove_file )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-enumError XSetFileTime ( XPARM File_t * f, FileAttrib_t * set_time )
+enumError XSetWFileTime ( XPARM WFile_t * f, FileAttrib_t * set_time )
 {
     // try to change time and ignore error messages
 
@@ -486,7 +486,7 @@ enumError XSetFileTime ( XPARM File_t * f, FileAttrib_t * set_time )
     enumError err = ERR_OK;
     if ( set_time && set_time->mtime )
     {
-	err = XCloseFile( XCALL f, false );
+	err = XCloseWFile( XCALL f, false );
 
 	struct timeval tval[2];
 	tval[0].tv_sec = set_time->atime ? set_time->atime : set_time->mtime;
@@ -495,16 +495,16 @@ enumError XSetFileTime ( XPARM File_t * f, FileAttrib_t * set_time )
 
 	if (f->split_f)
 	{
-	    File_t **end, **ptr = f->split_f;
+	    WFile_t **end, **ptr = f->split_f;
 	    for ( end = ptr + f->split_used; ptr < end; ptr++ )
 	    {
-		TRACE("XSetFileTime(%p,%p) fname=%s\n",f,set_time,(*ptr)->fname);
+		TRACE("XSetWFileTime(%p,%p) fname=%s\n",f,set_time,(*ptr)->fname);
 		utimes((*ptr)->fname,tval);
 	    }
 	}
 	else
 	{
-	    TRACE("XSetFileTime(%p,%p) fname=%s\n",f,set_time,f->fname);
+	    TRACE("XSetWFileTime(%p,%p) fname=%s\n",f,set_time,f->fname);
 	    utimes(f->fname,tval);
 	}
     }
@@ -514,11 +514,11 @@ enumError XSetFileTime ( XPARM File_t * f, FileAttrib_t * set_time )
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-static enumError XOpenFileHelper
-	( XPARM File_t * f, enumIOMode iomode, int default_flags, int force_flags )
+static enumError XOpenWFileHelper
+	( XPARM WFile_t * f, enumIOMode iomode, int default_flags, int force_flags )
 {
     ASSERT(f);
-    TRACE("#F# OpenFileHelper(%p,%x,%x,%x) dis=%d, mkdir=%d, fname=%s\n",
+    TRACE("#F# OpenWFileHelper(%p,%x,%x,%x) dis=%d, mkdir=%d, fname=%s\n",
 		f, iomode, default_flags, force_flags,
 		f->disable_errors, f->create_directory, f->fname );
 
@@ -601,7 +601,7 @@ static enumError XOpenFileHelper
 	f->fd = open( f->fname, f->active_open_flags, 0666 );
 	if ( f->fd == -1 && f->create_directory && f->is_writing )
 	{
-	    const enumError err = CreatePath(f->fname);
+	    const enumError err = CreatePath(f->fname,false);
 	    if (err)
 		return err;
 	    f->fd = open( f->fname, f->active_open_flags, 0666 );
@@ -621,7 +621,7 @@ static enumError XOpenFileHelper
 	}
  #endif
     }
-    TRACE("#F# OpenFile '%s' fd=%d, dis=%d\n", f->fname, f->fd, f->disable_errors );
+    TRACE("#F# OpenWFile '%s' fd=%d, dis=%d\n", f->fname, f->fd, f->disable_errors );
 
     if ( f->fd == -1 )
     {
@@ -650,14 +650,14 @@ static enumError XOpenFileHelper
     }
     else
     {
-	CopyFileAttribStat(&f->fatt,&f->st,false);
+	SetFileAttrib(&f->fatt,0,&f->st);
 	f->seek_allowed =  GetFileMode(f->st.st_mode) != FM_OTHER
 			&& lseek(f->fd,0,SEEK_SET) != (off_t)-1;
 	if ( iomode & opt_iomode || S_ISCHR(f->st.st_mode) )
-	    XOpenStreamFile(XCALL f);
+	    XOpenStreamWFile(XCALL f);
     }
 
-    TRACE("#F# OpenFileHelper(%p) returns %d, fd=%d, fp=%p, seek-allowed=%d, rw=%d,%d\n",
+    TRACE("#F# OpenWFileHelper(%p) returns %d, fd=%d, fp=%p, seek-allowed=%d, rw=%d,%d\n",
 		f, f->last_error, GetFD(f), GetFP(f), f->seek_allowed,
 		f->is_reading, f->is_writing );
 
@@ -666,10 +666,10 @@ static enumError XOpenFileHelper
 
 ///////////////////////////////////////////////////////////////////////////////
 
-enumError XOpenFile ( XPARM File_t * f, ccp fname, enumIOMode iomode )
+enumError XOpenWFile ( XPARM WFile_t * f, ccp fname, enumIOMode iomode )
 {
     ASSERT(f);
-    TRACE("XOpenFile(%s)\n",fname);
+    TRACE("XOpenWFile(%s)\n",fname);
 
     const bool no_fname = !fname;
     if (no_fname)
@@ -678,7 +678,7 @@ enumError XOpenFile ( XPARM File_t * f, ccp fname, enumIOMode iomode )
 	f->fname = 0;
     }
 
-    XResetFile( XCALL f, false );
+    XResetWFile( XCALL f, false );
 
     f->is_stdfile = fname[0] == '-' && !fname[1];
     if (f->is_stdfile)
@@ -689,12 +689,12 @@ enumError XOpenFile ( XPARM File_t * f, ccp fname, enumIOMode iomode )
     else
 	f->fname = no_fname ? fname : STRDUP(fname);
 
-    return XOpenFileHelper(XCALL f,iomode,O_RDONLY,O_RDONLY);
+    return XOpenWFileHelper(XCALL f,iomode,O_RDONLY,O_RDONLY);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-enumError XOpenFileModify ( XPARM File_t * f, ccp fname, enumIOMode iomode )
+enumError XOpenWFileModify ( XPARM WFile_t * f, ccp fname, enumIOMode iomode )
 {
     ASSERT(f);
 
@@ -705,7 +705,7 @@ enumError XOpenFileModify ( XPARM File_t * f, ccp fname, enumIOMode iomode )
 	f->fname = 0;
     }
 
-    XResetFile( XCALL f, false );
+    XResetWFile( XCALL f, false );
 
  #if SUPPORT_DIRECT // [[DIRECT]]
     if ( iomode == IOM_IS_WBFS_PART )
@@ -719,7 +719,7 @@ enumError XOpenFileModify ( XPARM File_t * f, ccp fname, enumIOMode iomode )
  #endif
 
     f->fname = no_fname ? fname : STRDUP(fname);
-    return XOpenFileHelper(XCALL f,iomode,O_RDWR,O_RDWR);
+    return XOpenWFileHelper(XCALL f,iomode,O_RDWR,O_RDWR);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -739,8 +739,8 @@ enumError XCheckCreated
 
 ///////////////////////////////////////////////////////////////////////////////
 
-enumError XCreateFile
-	( XPARM File_t * f, ccp fname, enumIOMode iomode, int overwrite )
+enumError XCreateWFile
+	( XPARM WFile_t * f, ccp fname, enumIOMode iomode, int overwrite )
 {
     ASSERT(f);
 
@@ -753,7 +753,7 @@ enumError XCreateFile
 	f->fname = 0;
     }
 
-    XResetFile( XCALL f, false );
+    XResetWFile( XCALL f, false );
 
     f->is_stdfile = fname[0] == '-' && !fname[1];
     if (f->is_stdfile)
@@ -761,7 +761,7 @@ enumError XCreateFile
 	f->fd    = dup(fileno(stdout));
 	f->fname = STRDUP("- (stdout)");
 
-	return XOpenFileHelper(XCALL f, iomode, open_flags, force_flags );
+	return XOpenWFileHelper(XCALL f, iomode, open_flags, force_flags );
     }
 
     if (!stat(fname,&f->st))
@@ -779,7 +779,7 @@ enumError XCreateFile
 	 #if SUPPORT_DIRECT // [[DIRECT]]
 	    f->allow_direct_io = true;
 	 #endif
-	    return XOpenFileHelper(XCALL f, iomode, O_WRONLY, 0 );
+	    return XOpenWFileHelper(XCALL f, iomode, O_WRONLY, 0 );
 	}
 	else
 	{
@@ -801,7 +801,7 @@ enumError XCreateFile
 	// no temp name possible
 
 	f->fname = STRDUP(fname);
-	return XOpenFileHelper(XCALL f, iomode, open_flags, force_flags );
+	return XOpenWFileHelper(XCALL f, iomode, open_flags, force_flags );
     }
 
     const bool disable_errors = f->disable_errors;
@@ -875,7 +875,7 @@ enumError XCreateFile
 	XXXXXX[5] = letters[v%62];
 
 	f->fname = fbuf; // temporary assignment
-	const enumError err = XOpenFileHelper(XCALL f,iomode,open_flags,open_flags);
+	const enumError err = XOpenWFileHelper(XCALL f,iomode,open_flags,open_flags);
 	if ( err == ERR_OK || err == ERR_CANT_CREATE_DIR )
 	{
 	    noPRINT("#F# TEMP:   '%s'\n",fbuf);
@@ -884,7 +884,7 @@ enumError XCreateFile
 	    return f->last_error = f->max_error = err;
 	}
 	f->fname = 0;
-	XResetFile( XCALL f, false );
+	XResetWFile( XCALL f, false );
     }
 
     // cleanup
@@ -898,17 +898,17 @@ enumError XCreateFile
  abort:
     f->max_error = f->last_error = ERR_CANT_CREATE;
     f->disable_errors = disable_errors;
-    TRACE("#F# CreateFile(%p) returns %d, fd=%d, fp=%p\n",
+    TRACE("#F# CreateWFile(%p) returns %d, fd=%d, fp=%p\n",
 		f, f->last_error, f->fd, f->fp );
     return f->last_error;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-enumError XOpenStreamFile ( XPARM File_t * f )
+enumError XOpenStreamWFile ( XPARM WFile_t * f )
 {
     ASSERT(f);
-    TRACE("#F# OpenStreamFile(%p) fd=%d, fp=%p\n",f,f->fd,f->fp);
+    TRACE("#F# OpenStreamWFile(%p) fd=%d, fp=%p\n",f,f->fd,f->fp);
 
     f->last_error = 0;
     if ( f->fd != -1 && !f->fp && !(f->active_open_flags & O_DIRECT) )
@@ -930,7 +930,7 @@ enumError XOpenStreamFile ( XPARM File_t * f )
 	    SeekF(f,f->file_off);
     }
 
-    noTRACE("#F# OpenStreamFile(%p) returns %d, fd=%d, fp=%p, off=%llx\n",
+    noTRACE("#F# OpenStreamWFile(%p) returns %d, fd=%d, fp=%p, off=%llx\n",
 		f, f->last_error, GetFD(f), GetFP(f), (u64)f->file_off );
     return f->last_error;
 }
@@ -939,88 +939,6 @@ enumError XOpenStreamFile ( XPARM File_t * f )
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // file name generation
-
-char * NormalizeFileName ( char * buf, char * end, ccp source, bool allow_slash )
-{
-    ASSERT(buf);
-    ASSERT(end);
-    ASSERT( buf <= end );
-    char * dest = buf;
-    TRACE("NormalizeFileName(%s,%d)\n",source,allow_slash);
-
-    if (source)
-    {
-     #ifdef __CYGWIN__
-	if (allow_slash)
-	{
-	    const int drv_len = IsWindowsDriveSpec(source);
-	    if (drv_len)
-	    {
-		dest = StringCopyE(dest,end,"/cygdrive/c/");
-		if ( dest < end )
-		    dest[-2] = tolower((int)*source);
-		source += drv_len;
-	    }
-	}
-     #endif
-
-	bool skip_space = true;
-	while ( *source && dest < end )
-	{
-	    unsigned char ch = *source++;
-	    if ( ch == ':' )
-	    {
-		if (!skip_space)
-		    *dest++ = ' ';
-		if ( dest + 2 <= end )
-		{
-		    *dest++ = '-';
-		    *dest++ = ' ';
-		}
-		skip_space = true;
-	    }
-	    else
-	    {
-		if ( isalnum(ch)
-			|| ( use_utf8
-				? ch >= 0x80
-				:    ch == 0xe4 // ä
-				  || ch == 0xf6 // ö
-				  || ch == 0xfc // ü
-				  || ch == 0xdf // ß
-				  || ch == 0xc4 // A
-				  || ch == 0xd6 // Ö
-				  || ch == 0xdc // Ü
-			    )
-			|| strchr("_+-=%'\"$%&,.!()[]{}<>",ch)
-			|| ch == '/' && allow_slash )
-		{
-		    *dest++ = ch;
-		    skip_space = false;
-		}
-	     #ifdef __CYGWIN__
-		else if ( ch == '\\' && allow_slash )
-		{
-		    *dest++ = '/';
-		    skip_space = false;
-		}
-	     #endif
-		else if (!skip_space)
-		{
-		    *dest++ = ' ';
-		    skip_space = true;
-		}
-	    }
-	}
-    }
-    if ( dest > buf && dest[-1] == ' ' )
-	dest--;
-
-    ASSERT( dest <= end );
-    return dest;
-}
-
-///////////////////////////////////////////////////////////////////////////////
 
 uint ReduceToPathAndType
 (
@@ -1053,10 +971,11 @@ uint ReduceToPathAndType
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SetFileName ( File_t * f, ccp source, bool allow_slash )
+void SetWFileName ( WFile_t * f, ccp source, bool allow_slash )
 {
     char fbuf[PATH_MAX];
-    char * dest = NormalizeFileName(fbuf, fbuf+sizeof(fbuf)-1, source, allow_slash );
+    char * dest
+	= NormalizeFileName( fbuf, sizeof(fbuf)-1, source, allow_slash, use_utf8 );
     *dest++ = 0;
     const int len = dest - fbuf;
 
@@ -1073,11 +992,11 @@ void SetFileName ( File_t * f, ccp source, bool allow_slash )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GenFileName ( File_t * f, ccp path, ccp name, ccp title, ccp id6, ccp ext )
+void GenWFileName ( WFile_t * f, ccp path, ccp name, ccp title, ccp id6, ccp ext )
 {
     ASSERT(f);
 
-    TRACE("GenFileName(,p=%s,n=%s,i=%s,e=%s)\n",
+    TRACE("GenWFileName(,p=%s,n=%s,i=%s,e=%s)\n",
 		path ? path : "",
 		name ? name : "",
 		id6  ? id6  : "",
@@ -1130,7 +1049,7 @@ void GenFileName ( File_t * f, ccp path, ccp name, ccp title, ccp id6, ccp ext )
     }
     else
     {
-	dest = NormalizeFileName(dest,end,title,false);
+	dest = NormalizeFileName(dest,end-dest,title,false,use_utf8);
 	TRACE(" >TITL: |%.*s|\n",(int)(dest-fbuf),fbuf);
 
 	if ( id6 && *id6 )
@@ -1166,8 +1085,8 @@ void GenFileName ( File_t * f, ccp path, ccp name, ccp title, ccp id6, ccp ext )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GenDestFileName
-	( File_t * f, ccp dest, ccp default_name, ccp ext, bool rm_std_ext )
+void GenDestWFileName
+	( WFile_t * f, ccp dest, ccp default_name, ccp ext, bool rm_std_ext )
 {
     char fbuf[PATH_MAX];
     if ( rm_std_ext && default_name )
@@ -1210,18 +1129,18 @@ void GenDestFileName
 	    if ( file_part )
 		default_name = file_part + 1;
 	}
-	GenFileName(f,dest,default_name,0,0,ext);
+	GenWFileName(f,dest,default_name,0,0,ext);
     }
     else
-	GenFileName(f,0,dest,0,0,0);
+	GenWFileName(f,0,dest,0,0,0);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GenImageFileName ( File_t * f, ccp dest, ccp default_name, enumOFT oft )
+void GenImageWFileName ( WFile_t * f, ccp dest, ccp default_name, enumOFT oft )
 {
     ccp ext = (uint)oft < OFT__N ? oft_info[oft].ext1 : 0;
-    GenDestFileName(f,dest,default_name,ext,true);
+    GenDestWFileName(f,dest,default_name,ext,true);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1286,7 +1205,7 @@ const OFT_info_t oft_info[OFT__N+1] =
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const CommandTab_t ImageTypeTab[] =
+const KeywordTab_t ImageTypeTab[] =
 {
     { OFT_PLAIN,	"ISO",	"PLAIN",	0 },
     { OFT__WDF_DEF,	"WDF",	0,		0 },
@@ -1355,8 +1274,8 @@ enumOFT CalcOFT ( enumOFT force, ccp fname_dest, ccp fname_src, enumOFT def )
 
 static void ExtractSplitMap
 (
-    File_t		* f,		// main file
-    File_t		* f2		// split file
+    WFile_t		* f,		// main file
+    WFile_t		* f2		// split file
 )
 {
     DASSERT(f);
@@ -1392,7 +1311,7 @@ static void ExtractSplitMap
 ///////////////////////////////////////////////////////////////////////////////
 // [[split]]
 
-static int split_seek ( File_t *f, off_t off )
+static int split_seek ( WFile_t *f, off_t off )
 {
     // returns:
     //	 0: success
@@ -1410,7 +1329,7 @@ static int split_seek ( File_t *f, off_t off )
 
 //-----------------------------------------------------------------------------
 
-enumError XSetupAutoSplit ( XPARM File_t *f, enumOFT oft )
+enumError XSetupAutoSplit ( XPARM WFile_t *f, enumOFT oft )
 {
     // [[2do]] : seek() doesn't work on Cygwin!
 
@@ -1450,12 +1369,12 @@ enumError XSetupAutoSplit ( XPARM File_t *f, enumOFT oft )
 	printf("   - Auto split at offset %llu (0x%llx)\n",
 		(u64)split_size, (u64)split_size );
 
-    return SetupSplitFile(f,oft,split_size);
+    return SetupSplitWFile(f,oft,split_size);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-enumError XSetupSplitFile ( XPARM File_t *f, enumOFT oft, off_t split_size )
+enumError XSetupSplitWFile ( XPARM WFile_t *f, enumOFT oft, off_t split_size )
 {
     ASSERT(f);
     if (f->split_f)
@@ -1512,12 +1431,12 @@ enumError XSetupSplitFile ( XPARM File_t *f, enumOFT oft, off_t split_size )
 	noPRINT("SPLIT-FNAME: %s\n",f->split_fname_format);
     }
 
-    File_t ** list = CALLOC(MAX_SPLIT_FILES,sizeof(*list));
-    File_t * first;
-    *list = first = MALLOC(sizeof(File_t));
+    WFile_t ** list = CALLOC(MAX_SPLIT_FILES,sizeof(*list));
+    WFile_t * first;
+    *list = first = MALLOC(sizeof(WFile_t));
 
     // copy all but cache
-    memcpy(first,f,sizeof(File_t));
+    memcpy(first,f,sizeof(WFile_t));
 
     first->is_caching = false;
     first->cache = 0;
@@ -1590,16 +1509,16 @@ enumError XSetupSplitFile ( XPARM File_t *f, enumOFT oft, off_t split_size )
 	    if (stat(fname,&st))
 		break;
 
-	    File_t * fi = MALLOC(sizeof(*f));
-	    InitializeFile(fi);
+	    WFile_t * fi = MALLOC(sizeof(*f));
+	    InitializeWFile(fi);
 	    fi->open_flags = f->active_open_flags;
 	    fi->fname = STRDUP(fname);
-	    enumError err = XOpenFileHelper( XCALL fi,
+	    enumError err = XOpenWFileHelper( XCALL fi,
 				have_stream ? IOM_FORCE_STREAM : IOM_NO_STREAM,
 				f->active_open_flags, f->active_open_flags );
 	    if (err)
 	    {
-		CloseFile(fi,false);
+		CloseWFile(fi,false);
 		FREE(fi);
 		return err;
 	    }
@@ -1624,7 +1543,7 @@ enumError XSetupSplitFile ( XPARM File_t *f, enumOFT oft, off_t split_size )
 	f->fatt.size = f->st.st_size;
     }
 
-    File_t * fi = f->split_f[f->split_used-1];
+    WFile_t * fi = f->split_f[f->split_used-1];
     ASSERT(fi);
     if ( fi->split_filesize < f->split_filesize )
     {
@@ -1646,7 +1565,7 @@ enumError XSetupSplitFile ( XPARM File_t *f, enumOFT oft, off_t split_size )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-enumError XCreateSplitFile ( XPARM File_t *f, uint split_idx )
+enumError XCreateSplitFile ( XPARM WFile_t *f, uint split_idx )
 {
     ASSERT( f );
     ASSERT( f->split_f );
@@ -1668,10 +1587,10 @@ enumError XCreateSplitFile ( XPARM File_t *f, uint split_idx )
 
     while ( f->split_used <= split_idx )
     {
-	File_t ** ptr = f->split_f + f->split_used;
+	WFile_t ** ptr = f->split_f + f->split_used;
 	ASSERT(!*ptr);
 
-	File_t * prev;
+	WFile_t * prev;
 	if ( f->split_used > 0 )
 	{
 	    prev = ptr[-1];
@@ -1685,13 +1604,13 @@ enumError XCreateSplitFile ( XPARM File_t *f, uint split_idx )
 	snprintf(fname,sizeof(fname),f->split_fname_format,f->split_used++);
 	TRACE("#S#%u# Create %s\n",f->split_used-1,fname);
 
-	File_t * f2 = MALLOC(sizeof(File_t));
-	InitializeFile(f2);
+	WFile_t * f2 = MALLOC(sizeof(WFile_t));
+	InitializeWFile(f2);
 	*ptr = f2;
 	const int flags = O_CREAT|O_WRONLY|O_TRUNC|O_EXCL|f->active_open_flags;
 	f2->fname = STRDUP(fname);
 	enumError err
-	    = XOpenFileHelper( XCALL f2,
+	    = XOpenWFileHelper( XCALL f2,
 				prev && prev->fp ? IOM_FORCE_STREAM : IOM_NO_STREAM,
 				flags, flags );
 	if (err)
@@ -1715,7 +1634,7 @@ enumError XCreateSplitFile ( XPARM File_t *f, uint split_idx )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-enumError XFindSplitFile ( XPARM File_t *f, uint * p_index, off_t * p_off )
+enumError XFindSplitFile ( XPARM WFile_t *f, uint * p_index, off_t * p_off )
 {
     ASSERT( f );
     ASSERT( f->split_f );
@@ -1724,7 +1643,7 @@ enumError XFindSplitFile ( XPARM File_t *f, uint * p_index, off_t * p_off )
     off_t off = *p_off;
     TRACE("#S# XFindSplitFile(off=%llx) %u/%u\n",(u64)off,f->split_used,MAX_SPLIT_FILES);
 
-    File_t ** ptr = f->split_f;
+    WFile_t ** ptr = f->split_f;
     for (;;)
     {
 	if (!*ptr)
@@ -1734,7 +1653,7 @@ enumError XFindSplitFile ( XPARM File_t *f, uint * p_index, off_t * p_off )
 		return err;
 	}
 
-	File_t *cur = *ptr;
+	WFile_t *cur = *ptr;
 	ASSERT(cur);
 	if ( off <= cur->split_filesize )
 	{
@@ -1753,7 +1672,7 @@ enumError XFindSplitFile ( XPARM File_t *f, uint * p_index, off_t * p_off )
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-void ClearCache	( File_t * f )
+void ClearCache	( WFile_t * f )
 {
     DASSERT(f);
     f->is_caching = false;
@@ -1769,7 +1688,7 @@ void ClearCache	( File_t * f )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void DefineCachedArea ( File_t * f, off_t off, size_t count )
+void DefineCachedArea ( WFile_t * f, off_t off, size_t count )
 {
     // this whole function assumes that count is small and that the hole
     // cache size is less than MAX(size_t)
@@ -1844,7 +1763,7 @@ void DefineCachedArea ( File_t * f, off_t off, size_t count )
 
 //-----------------------------------------------------------------------------
 
-void DefineCachedAreaISO ( File_t * f, bool head_only )
+void DefineCachedAreaISO ( WFile_t * f, bool head_only )
 {
     ASSERT(f);
     if (head_only)
@@ -1861,7 +1780,7 @@ void DefineCachedAreaISO ( File_t * f, bool head_only )
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-enumError XAnalyzeWH ( XPARM File_t * f, wdf_header_t * wh0, bool print_err )
+enumError XAnalyzeWH ( XPARM WFile_t * f, wdf_header_t * wh0, bool print_err )
 {
     DASSERT(wh0);
     TRACE("AnalyzeWH()\n");
@@ -1900,7 +1819,7 @@ enumError XAnalyzeWH ( XPARM File_t * f, wdf_header_t * wh0, bool print_err )
     if ( chunk_end > f->st.st_size )
     {
 	// file size to short -> maybe a splitted file
-	XSetupSplitFile(XCALL f,OFT_UNKNOWN,0);
+	XSetupSplitWFile(XCALL f,OFT_UNKNOWN,0);
     }
 
  #if 0
@@ -1930,7 +1849,7 @@ enumError XAnalyzeWH ( XPARM File_t * f, wdf_header_t * wh0, bool print_err )
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-static FileCache_t * XCacheHelper ( XPARM File_t * f, off_t off, size_t count )
+static FileCache_t * XCacheHelper ( XPARM WFile_t * f, off_t off, size_t count )
 {
     // This function does the following:
     // a) look into the cache table to find if (off,count) is part of an
@@ -2005,7 +1924,7 @@ static FileCache_t * XCacheHelper ( XPARM File_t * f, off_t off, size_t count )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-static void PreallocHelper ( File_t *f )
+static void PreallocHelper ( WFile_t *f )
 {
     DASSERT(f);
 
@@ -2080,7 +1999,7 @@ static void PreallocHelper ( File_t *f )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-enumError XTellF ( XPARM File_t * f )
+enumError XTellF ( XPARM WFile_t * f )
 {
     ASSERT(f);
 
@@ -2120,7 +2039,7 @@ enumError XTellF ( XPARM File_t * f )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-enumError ExecSeekF ( File_t * f, off_t off )
+enumError ExecSeekF ( WFile_t * f, off_t off )
 {
     bool failed;
     if (f->fp)
@@ -2145,7 +2064,7 @@ enumError ExecSeekF ( File_t * f, off_t off )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-enumError XSeekF ( XPARM File_t * f, off_t off )
+enumError XSeekF ( XPARM WFile_t * f, off_t off )
 {
     ASSERT(f);
 
@@ -2273,7 +2192,7 @@ enumError XSeekF ( XPARM File_t * f, off_t off )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-enumError XSetSizeF ( XPARM File_t * f, off_t size )
+enumError XSetSizeF ( XPARM WFile_t * f, off_t size )
 {
     ASSERT(f);
     TRACE(TRACE_SEEK_FORMAT, "#F# SetSizeF()",
@@ -2292,7 +2211,7 @@ enumError XSetSizeF ( XPARM File_t * f, off_t size )
 	if (err)
 	    return err;
 	ASSERT( index < MAX_SPLIT_FILES );
-	File_t ** ptr = f->split_f + index;
+	WFile_t ** ptr = f->split_f + index;
 	XSetSizeF(XCALL *ptr,size);
 
 	int count = f->split_used - index;
@@ -2301,7 +2220,7 @@ enumError XSetSizeF ( XPARM File_t * f, off_t size )
 	{
 	    ptr++;
 	    ASSERT(*ptr);
-	    XCloseFile( XCALL *ptr, true );
+	    XCloseWFile( XCALL *ptr, true );
 	    FREE(*ptr);
 	    *ptr = 0;
 	}
@@ -2341,7 +2260,7 @@ enumError XSetSizeF ( XPARM File_t * f, off_t size )
 enumError XPreallocateF
 (
     XPARM			// debugging and tracing infos
-    File_t	* f,		// valid file, writing
+    WFile_t	* f,		// valid file, writing
     off_t	off,		// offset
     off_t	size		// needed size
 )
@@ -2364,7 +2283,7 @@ enumError XPreallocateF
 
 ///////////////////////////////////////////////////////////////////////////////
 
-enumError XReadF ( XPARM File_t * f, void * iobuf, size_t count )
+enumError XReadF ( XPARM WFile_t * f, void * iobuf, size_t count )
 {
     ASSERT(f);
 
@@ -2441,7 +2360,7 @@ enumError XReadF ( XPARM File_t * f, void * iobuf, size_t count )
 		GetFD(f), GetFP(f), (u64)f->cur_off, (u64)f->cur_off+count, count,
 		f->cur_off < f->max_off ? " <" : "" );
 
-	File_t ** ptr = f->split_f;
+	WFile_t ** ptr = f->split_f;
 	off_t off = f->cur_off;
 	f->cur_off = 0;
 
@@ -2455,7 +2374,7 @@ enumError XReadF ( XPARM File_t * f, void * iobuf, size_t count )
 		return XReadAtF( XCALL *ptr, off, iobuf, count );
 	    }
 
-	    File_t *cur = *ptr;
+	    WFile_t *cur = *ptr;
 	    ASSERT(cur);
 	    TRACE("#S#%zd# off=%llx cur_of=%llx count=%zx fsize=%llx\n",
 			ptr-f->split_f, (u64)off, (u64)f->cur_off,
@@ -2610,7 +2529,7 @@ enumError XReadF ( XPARM File_t * f, void * iobuf, size_t count )
 enumError XWriteDirectAtF
 (
     XPARM				// XPARM
-    File_t		*f,		// file to write (and read for partial blocks)
+    WFile_t		*f,		// file to write (and read for partial blocks)
     off_t		off,		// offset to write
     const void		*io_buf,	// data to write
     size_t		io_size,	// size of data to write
@@ -2685,7 +2604,7 @@ xBINGO;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-enumError XWriteF ( XPARM File_t * f, const void * iobuf, size_t count )
+enumError XWriteF ( XPARM WFile_t * f, const void * iobuf, size_t count )
 {
     ASSERT(f);
 
@@ -2699,7 +2618,7 @@ enumError XWriteF ( XPARM File_t * f, const void * iobuf, size_t count )
 		GetFD(f), GetFP(f), (u64)f->cur_off, (u64)f->cur_off+count, count,
 		f->cur_off < f->max_off ? " <" : "" );
 
-	File_t ** ptr = f->split_f;
+	WFile_t ** ptr = f->split_f;
 	off_t off = f->cur_off;
 	f->cur_off = 0;
 
@@ -2712,7 +2631,7 @@ enumError XWriteF ( XPARM File_t * f, const void * iobuf, size_t count )
 		    return err;
 	    }
 
-	    File_t *cur = *ptr;
+	    WFile_t *cur = *ptr;
 	    ASSERT(cur);
 	    TRACE("#S#%zd# off=%llx cur_of=%llx count=%zx fsize=%llx\n",
 			ptr-f->split_f, (u64)off, (u64)f->cur_off,
@@ -2816,7 +2735,7 @@ enumError XWriteF ( XPARM File_t * f, const void * iobuf, size_t count )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-enumError XReadAtF ( XPARM File_t * f, off_t off, void * iobuf, size_t count )
+enumError XReadAtF ( XPARM WFile_t * f, off_t off, void * iobuf, size_t count )
 {
     ASSERT(f);
     noTRACE("#F# ReadAtF(fd=%d,o:%llx,%p,n:%zx)\n",f->fd,(u64)off,iobuf,count);
@@ -2828,7 +2747,7 @@ enumError XReadAtF ( XPARM File_t * f, off_t off, void * iobuf, size_t count )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-enumError XWriteAtF ( XPARM File_t * f, off_t off, const void * iobuf, size_t count )
+enumError XWriteAtF ( XPARM WFile_t * f, off_t off, const void * iobuf, size_t count )
 {
     ASSERT(f);
     noTRACE("#F# WriteAtF(fd=%d,o=%llx,%p,n=%zx)\n",f->fd,(u64)off,iobuf,count);
@@ -2844,7 +2763,7 @@ enumError XWriteAtF ( XPARM File_t * f, off_t off, const void * iobuf, size_t co
 
 ///////////////////////////////////////////////////////////////////////////////
 
-enumError XWriteZeroAtF ( XPARM File_t * f, off_t off, size_t count )
+enumError XWriteZeroAtF ( XPARM WFile_t * f, off_t off, size_t count )
 {
     TRACE(TRACE_RDWR_FORMAT, "#F# WriteZeroAtF()",
 		GetFD(f), GetFP(f), (u64)off, (u64)off+count, count,
@@ -2863,7 +2782,7 @@ enumError XWriteZeroAtF ( XPARM File_t * f, off_t off, size_t count )
 ///////////////////////////////////////////////////////////////////////////////
 // [zero]
 
-enumError XZeroAtF ( XPARM File_t * f, off_t off, size_t count )
+enumError XZeroAtF ( XPARM WFile_t * f, off_t off, size_t count )
 {
     ASSERT(f);
     TRACE(TRACE_RDWR_FORMAT, "#F# ZeroAtF()",
@@ -3009,21 +2928,21 @@ int WrapperWriteSector ( void * handle, u32 lba, u32 count, void * iobuf )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-int GetFD ( const File_t * f )
+int GetFD ( const WFile_t * f )
 {
     return !f ? -1 : f->split_used > 0 ? f->split_f[0]->fd : f->fd;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-FILE * GetFP ( const File_t * f )
+FILE * GetFP ( const WFile_t * f )
 {
     return !f ? 0 : f->split_used > 0 ? f->split_f[0]->fp : f->fp;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-char GetFT ( const File_t * f )
+char GetFT ( const WFile_t * f )
 {
     if (!f)
 	return '%';
@@ -3036,33 +2955,16 @@ char GetFT ( const File_t * f )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool IsOpenF ( const File_t * f )
+bool IsOpenF ( const WFile_t * f )
 {
     return f && ( f->split_used > 0 ? f->split_f[0]->fd : f->fd ) != -1;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool IsSplittedF ( const File_t * f )
+bool IsSplittedF ( const WFile_t * f )
 {
     return f && f->split_used > 0;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-bool IsDirectory ( ccp fname, bool answer_if_empty )
-{
-    if ( !fname || !*fname )
-	return answer_if_empty;
-
-    if ( *fname == '-' && !fname[1] )
-	return false;
-
-    if ( fname[strlen(fname)-1] == '/' )
-	return true;
-
-    struct stat st;
-    return !stat(fname,&st) && S_ISDIR(st.st_mode);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -3094,211 +2996,9 @@ ccp GetFileModeText ( enumFileMode mode, bool longtext, ccp fail_text )
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
-enumError CreatePath ( ccp fname )
-{
-    TRACE("CreatePath(%s)\n",fname);
-
-    char buf[PATH_MAX], *dest = buf;
-    StringCopyS(buf,sizeof(buf),fname);
-
-    for(;;)
-    {
-	// skip slashes
-	while ( *dest == '/' )
-	    dest++;
-
-	// search end of current directory
-	while ( *dest && *dest != '/' )
-	    dest++;
-	if (!*dest)
-	    break;
-
-	*dest = 0;
-	if ( mkdir(buf,0777) && errno != EEXIST && !IsDirectory(buf,0) )
-	{
-	    noTRACE("CREATE-DIR: %s -> err=%d (ENOTDIR=%d)\n",buf,errno,ENOTDIR);
-	    if ( errno == ENOTDIR )
-	    {
-		while ( dest > buf && *dest != '/' )
-		    dest--;
-		if ( dest > buf )
-		    *dest = 0;
-	    }
-	    return ERROR1( ERR_CANT_CREATE_DIR,
-		errno == ENOTDIR
-			? "Not a directory: %s\n"
-			: "Can't create directory: %s\n", buf );
-	}
-	TRACE("CREATE-DIR: %s -> OK\n",buf);
-	*dest++ = '/';
-    }
-    return ERR_OK;
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 
-s64 GetFileSize
-(
-    ccp			path1,		// NULL or part 1 of path
-    ccp			path2,		// NULL or part 2 of path
-    s64			not_found_val,	// return value if no regular file found
-    FileAttrib_t	* fatt,		// not NULL: store file attributes
-    bool		fatt_max	// true: store max values to 'fatt'
-)
-{
-    char pathbuf[PATH_MAX];
-    ccp path = PathCatPP(pathbuf,sizeof(pathbuf),path1,path2);
-    TRACE("GetFileSize(%s,%lld)\n",path,not_found_val);
-
-    struct stat st;
-    if ( stat(path,&st) || !S_ISREG(st.st_mode) )
-    {
-	if ( fatt && !fatt_max )
-	    memset(fatt,0,sizeof(*fatt));
-	return not_found_val;
-    }
-
-    if (fatt)
-	CopyFileAttribStat(fatt,&st,fatt_max);
-
-    return st.st_size;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-enumError LoadFile
-(
-    ccp			path1,		// NULL or part #1 of path
-    ccp			path2,		// NULL or part #2 of path
-    size_t		skip,		// skip num of bytes before reading
-    void		* data,		// destination buffer, size = 'size'
-    size_t		size,		// size to read
-    bool		silent,		// true: suppress printing of error messages
-    FileAttrib_t	* fatt,		// not NULL: store file attributes
-    bool		fatt_max	// true: store max values to 'fatt'
-)
-{
-    // [[2do]] error handling
-
-    ASSERT(data);
-    if ( fatt && !fatt_max )
-	memset(fatt,0,sizeof(*fatt));
-
-    if (!size)
-	return ERR_OK;
-
-    char pathbuf[PATH_MAX];
-    ccp path = PathCatPP(pathbuf,sizeof(pathbuf),path1,path2);
-    TRACE("LoadFile(%s,%zu,%zu,%d)\n",path,skip,size,silent);
-
-    FILE * f = fopen(path,"rb");
-    if (!f)
-    {
-	if (!silent)
-	    ERROR1(ERR_CANT_OPEN,"Can't open file: %s\n",path);
-	return ERR_CANT_OPEN;
-    }
-
-    if (fatt)
-    {
-	struct stat st;
-	if (!fstat(fileno(f),&st))
-	    CopyFileAttribStat(fatt,&st,fatt_max);
-    }
-
-    if ( skip > 0 )
-	fseek(f,skip,SEEK_SET);
-
-    size_t read_stat = fread(data,1,size,f);
-    fclose(f);
-
-    if ( read_stat == size )
-	return ERR_OK;
-
-    noPRINT("D=%p, s=%zu/%zu: %s\n",data,read_stat,size,path);
-    if ( read_stat >= 0 && read_stat < size )
-	memset((char*)data+read_stat,0,size-read_stat);
-
-    return ERR_WARNING;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-enumError LoadFileAlloc
-(
-    ccp			path1,		// NULL or part #1 of path
-    ccp			path2,		// NULL or part #2 of path
-    size_t		skip,		// skip num of bytes before reading
-    u8			** res_data,	// result: free existing data, store ptr to alloc data
-					// always one more byte is alloced and set to NULL
-    size_t		*  res_size,	// result: size of 'res_data'
-    size_t		max_size,	// >0: a file size limit
-    bool		silent,		// true: suppress printing of error messages
-    FileAttrib_t	* fatt,		// not NULL: store file attributes
-    bool		fatt_max	// true: store max values to 'fatt'
-)
-{
-    DASSERT(res_data);
-    DASSERT(res_size);
-
-    //--- clear return data
-
-    if (res_data)
-	*res_data = 0;
-
-    if (res_size)
-	*res_size = 0;
-
-    if ( fatt && !fatt_max )
-	memset(fatt,0,sizeof(*fatt));
-
-
-    //--- get file size
-
-    char pathbuf[PATH_MAX];
-    ccp path = PathCatPP(pathbuf,sizeof(pathbuf),path1,path2);
-
-    const s64 size = GetFileSize(path,0,-1,0,0);
-    if ( size == -1 )
-    {
-	if (!silent)
-	    ERROR0(ERR_SYNTAX,"File not found: %s\n",path);
-	return ERR_SYNTAX;
-    }
-
-    if ( max_size && size > max_size )
-    {
-	if (!silent)
-	    ERROR0(ERR_INVALID_FILE,"File too large: %s\n",path);
-	return ERR_INVALID_FILE;
-    }
-
-    u8 *data = MALLOC(size+1);
-    enumError err = LoadFile(path,0,skip,data,size,silent,fatt,fatt_max);
-    if (err)
-    {
-	FREE(data);
-	return err;
-    }
-
-    if (res_data)
-    {
-	data[size] = 0;
-	*res_data = data;
-    }
-    else
-	FREE(data);
-
-    if (res_size)
-	*res_size = size;
-
-    return err;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-enumError CheckCreateFile
+enumError CheckCreateFileOpt
 (
     // returns:
     //   ERR_WARNING:		source is "-" (stdout) => 'st' is zeroed
@@ -3313,6 +3013,7 @@ enumError CheckCreateFile
     struct stat	*st		// not NULL: store file status here
 )
 {
+    // [[dclib]] use CheckCreateFile()
 
     if ( detect_stdout && fname[0] == '-' && !fname[1] )
     {
@@ -3357,7 +3058,7 @@ enumError CheckCreateFile
 
 ///////////////////////////////////////////////////////////////////////////////
 
-enumError SaveFile
+enumError SaveFileOpt
 (
     ccp			path1,		// NULL or part #1 of path
     ccp			path2,		// NULL or part #2 of path
@@ -3368,13 +3069,14 @@ enumError SaveFile
     bool		silent		// true: suppress error messages
 )
 {
+    // [[dclib]] use SaveFile()
     ASSERT(data);
 
     char pathbuf[PATH_MAX];
     ccp path = PathCatPP(pathbuf,sizeof(pathbuf),path1,path2);
-    TRACE("SaveFile(%s,%zx,%d)\n",path,size,silent);
+    TRACE("SaveFileOpt(%s,%zx,%d)\n",path,size,silent);
 
-    enumError err = CheckCreateFile(path,false,overwrite,silent,0);
+    enumError err = CheckCreateFileOpt(path,false,overwrite,silent,0);
     if (err)
 	return err;
 
@@ -3383,7 +3085,7 @@ enumError SaveFile
     {
 	if (create_dir)
 	{
-	    CreatePath(path);
+	    CreatePath(path,false);
 	    f = fopen(path,"wb");
 	}
 
@@ -3412,7 +3114,7 @@ enumError SaveFile
 
 void ClearFileID
 (
-    File_t		* f
+    WFile_t		* f
 )
 {
     DASSERT(f);
@@ -3424,7 +3126,7 @@ void ClearFileID
 
 void SetFileID
 (
-    File_t		* f,
+    WFile_t		* f,
     const void		* new_id,
     int			id_length
 )
@@ -3442,7 +3144,7 @@ void SetFileID
 
 bool SetPatchFileID
 (
-    File_t		* f,
+    WFile_t		* f,
     const void		* new_id,
     int			id_length
 )
@@ -3461,119 +3163,6 @@ bool SetPatchFileID
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////                  FileAttrib_t                   ///////////////
 ///////////////////////////////////////////////////////////////////////////////
-
-FileAttrib_t * NormalizeFileAttrib
-(
-    FileAttrib_t	* fa		// valid attribute
-)
-{
-    DASSERT(fa);
-
-    if ( fa->size < 0 )
-	fa->size = 0;
-
-    time_t mtime = fa->mtime;
-    if (!mtime)
-    {
-	mtime = fa->itime;
-	if (!mtime)
-	{
-	    mtime = fa->ctime;
-	    if (!mtime)
-		mtime = fa->atime;
-	}
-    }
-    fa->mtime = mtime;
-
-    if (!fa->itime)
-	fa->itime = fa->ctime > mtime ? fa->ctime : mtime;
-
-    if (!fa->ctime)
-	fa->ctime = fa->itime > mtime ? fa->itime : mtime;
-
-    if (!fa->atime)
-	fa->atime = fa->itime > fa->ctime ? fa->itime : fa->ctime;
-
-    return fa;
-}
-
-//-----------------------------------------------------------------------------
-
-FileAttrib_t * MaxFileAttrib
-(
-    FileAttrib_t	* dest,		// source and destination attribute
-    const FileAttrib_t	* src		// NULL or second source attribute
-)
-{
-    DASSERT(dest);
-    if (src)
-    {
-	if ( dest->size < src->size )
-	     dest->size = src->size;
-	if ( dest->itime < src->itime )
-	     dest->itime = src->itime;
-	if ( dest->mtime < src->mtime )
-	     dest->mtime = src->mtime;
-	if ( dest->ctime < src->ctime )
-	     dest->ctime = src->ctime;
-	if ( dest->atime < src->atime )
-	     dest->atime = src->atime;
-    }
-    return dest;
-}
-
-//-----------------------------------------------------------------------------
-
-FileAttrib_t * CopyFileAttrib
-(
-    FileAttrib_t	* dest,		// valid destination attribute
-    const FileAttrib_t	* src		// valid source attribute
-)
-{
-    DASSERT(src);
-    DASSERT(dest);
-
-    memcpy(dest,src,sizeof(*dest));
-    return NormalizeFileAttrib(dest);
-}
-
-//-----------------------------------------------------------------------------
-
-FileAttrib_t * CopyFileAttribStat
-(
-    FileAttrib_t	* dest,		// valid destination attribute
-    const struct stat	* src,		// NULL or source
-    bool		maximize	// true store max values to 'dest'
-)
-{
-    DASSERT(dest);
-
-    if (src)
-    {
-	FileAttrib_t temp_fatt;
-	FileAttrib_t * fatt = maximize ? &temp_fatt : dest;
-
-	memset(fatt,0,sizeof(*fatt));
-	fatt->size = src->st_size;
-
-	if ( S_ISREG(src->st_mode) )
-	{
-	    fatt->mtime = src->st_mtime;
-	    fatt->ctime = src->st_ctime;
-	    fatt->atime = src->st_atime;
-	}
-	NormalizeFileAttrib(fatt);
-
-	if (maximize)
-	    MaxFileAttrib(dest,fatt);
-    }
-    else if (!maximize)
-	memset(dest,0,sizeof(*dest));
-
-    return dest;
-}
-
-//-----------------------------------------------------------------------------
 
 FileAttrib_t * CopyFileAttribInode
 	( FileAttrib_t * dest, const struct wbfs_inode_info_t * src, off_t size )
@@ -3674,7 +3263,7 @@ char * AllocSplitFilename ( ccp path, enumOFT oft )
  static enumError GetFileMapHelper_FIEMAP
  (
     FileMap_t		* fm,		// file map
-    File_t		* file,		// file to analyze
+    WFile_t		* file,		// file to analyze
     struct fiemap	* fmap,		// valid fiemap structure
     uint		n_elem		// number of 'fmap->fm_extents' elements
  )
@@ -3723,7 +3312,7 @@ char * AllocSplitFilename ( ccp path, enumOFT oft )
  static enumError GetFileSystemMap_FIEMAP
  (
     FileMap_t		* fm,		// file map
-    File_t		* file		// file to analyze
+    WFile_t		* file		// file to analyze
  )
  {
     DASSERT(fm);
@@ -3739,7 +3328,7 @@ char * AllocSplitFilename ( ccp path, enumOFT oft )
     enumError err = ERR_OK;
     if (file->split_f)
     {
-	File_t **end, **ptr = file->split_f;
+	WFile_t **end, **ptr = file->split_f;
 	for ( end = ptr + file->split_used; err == ERR_OK && ptr < end; ptr++ )
 	    err = GetFileMapHelper_FIEMAP(fm,*ptr,fmap,MAX_ELEM);
     }
@@ -3759,7 +3348,7 @@ char * AllocSplitFilename ( ccp path, enumOFT oft )
  static enumError GetFileSystemMap_FIBMAP
  (
     FileMap_t		* fm,		// file map
-    File_t		* file		// file to analyze
+    WFile_t		* file		// file to analyze
  )
  {
     DASSERT(fm);
@@ -3767,7 +3356,7 @@ char * AllocSplitFilename ( ccp path, enumOFT oft )
 
     if (file->split_f)
     {
-	File_t **end, **ptr = file->split_f;
+	WFile_t **end, **ptr = file->split_f;
 	for ( end = ptr + file->split_used; ptr < end; ptr++ )
 	{
 	    enumError err = GetFileSystemMap_FIBMAP(fm,*ptr);
@@ -3817,7 +3406,7 @@ enumError GetFileSystemMap
 (
     FileMap_t		* fm,		// file map
     bool		init_fm,	// true: initialize 'fm', false: reset 'fm'
-    File_t		* file		// file to analyze
+    WFile_t		* file		// file to analyze
 )
 {
     DASSERT(fm);
@@ -3869,7 +3458,7 @@ enumError GetFileSystemMap
     enumError err = ERR_OK;
     if (file->split_f)
     {
-	File_t **end, **ptr = file->split_f;
+	WFile_t **end, **ptr = file->split_f;
 	for ( end = ptr + file->split_used; err == ERR_OK && ptr < end; ptr++ )
 	    if (GetWinFileMap(fm,(*ptr)->fd,(*ptr)->split_off,(*ptr)->st.st_size))
 		err = ERR_READ_FAILED;
@@ -3890,95 +3479,6 @@ enumError GetFileSystemMap
 //
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////			cygwin support			///////////////
-///////////////////////////////////////////////////////////////////////////////
-
-#ifdef __CYGWIN__
-
- int IsWindowsDriveSpec ( ccp src )
- {
-    if ( ( *src >= 'a' && *src <= 'z' || *src >= 'A' && *src <= 'Z' )
-	&& src[1] == ':' )
-    {
-	if (!src[2])
-	    return 2;
-
-	if ( src[2] == '/' || src[2] == '\\' )
-	    return 3;
-    }
-    return 0;
- }
-
-#endif // __CYGWIN__
-
-///////////////////////////////////////////////////////////////////////////////
-
-#ifdef __CYGWIN__
-
- int NormalizeFilenameCygwin ( char * buf, size_t bufsize, ccp src )
- {
-    static char prefix[] = "/cygdrive/";
-
-    if ( bufsize < sizeof(prefix) + 5 )
-    {
-	*buf = 0;
-	return 0;
-    }
-
-    char * end = buf + bufsize - 1;
-    char * dest = buf;
-
-    if (   ( *src >= 'a' && *src <= 'z' || *src >= 'A' && *src <= 'Z' )
-	&& src[1] == ':'
-	&& ( src[2] == 0 || src[2] == '/' || src[2] == '\\' ))
-    {
-	memcpy(buf,prefix,sizeof(prefix));
-	dest = buf + sizeof(prefix)-1;
-	*dest++ = tolower((int)*src); // cygwin needs the '(int)'
-	*dest = 0;
-	if (IsDirectory(buf,false))
-	{
-	    *dest++ = '/';
-	    src += 2;
-	    if (*src)
-		src++;
-	}
-	else
-	    dest = buf;
-    }
-    ASSERT( dest < buf + bufsize );
-
-    while ( dest < end && *src )
-	if ( *src == '\\' )
-	{
-	    *dest++ = '/';
-	    src++;
-	}
-	else
-	    *dest++ = *src++;
-
-    *dest = 0;
-    ASSERT( dest < buf + bufsize );
-    return dest - buf;
- }
-
-#endif // __CYGWIN__
-
-///////////////////////////////////////////////////////////////////////////////
-
-#ifdef __CYGWIN__
-
- char * AllocNormalizedFilenameCygwin ( ccp source )
- {
-    char buf[PATH_MAX];
-    const int len = NormalizeFilenameCygwin(buf,sizeof(buf),source);
-    char * result = MALLOC(len+1);
-    memcpy(result,buf,len+1);
-    ASSERT(buf[len]==0);
-    return result;
- }
-
-#endif // __CYGWIN__
-
 ///////////////////////////////////////////////////////////////////////////////
 
 void SetDest ( ccp dest, bool mkdir )

@@ -375,6 +375,36 @@
 		" For Windows (CYGWIN) it is a good choice to set @'-E$$'@"
 		" to avoid conflicts with command shell variables." },
 
+  { T_OPT_GO|F_IGNORE,
+		"COLOR",	"color",
+		"[=modus]",
+		"Define the modus for colored text output."
+		" Allowed keywords are:"
+		" @OFF@ or @NO-COLORS@ to disable colors,"
+		" @AUTO@ (default) for automatic detection,"
+		" @ON@ for automatic detection but never @OFF@,"
+		" @8-COLORS@ and @256-COLORS@ for 8 and 256 color support."
+		" Without parameter, @ON@ is used."
+		"\n "
+		" @AUTO@ will enable colorized output only for terminals."
+		" @AUTO@ and @ON@ use environment variable @TERM@"
+		" to find the correct color modus."
+		"\n "
+		" If a command is prefixed by @'C-'@,"
+		" then @--color=ON@ is used implicitly as default." },
+
+  { T_OPT_G|F_IGNORE,
+		"COLOR_256",	"256-colors|256colors",
+		0,
+		"Short cut for {--color=256-colors}:"
+		" Force colorized text with 256 color support." },
+
+  { T_OPT_G|F_IGNORE,
+		"NO_COLOR",	"no-colors|nocolors",
+		0,
+		"Short cut for {--color=off}: Deactivate colorized text."
+		" This is the default, if an output file is not a terminal." },
+
   { T_OPT_GP,	"IO",		"io",
 		"flags",
 		"Setup the IO mode for experiments."

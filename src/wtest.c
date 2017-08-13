@@ -60,9 +60,9 @@
   #include <linux/fs.h>
 #endif
 
-#include "debug.h"
+#include "dclib/dclib-debug.h"
 #include "version.h"
-#include "types.h"
+#include "dclib/dclib-types.h"
 #include "lib-sf.h"
 #include "lib-std.h"
 #include "match-pattern.h"
@@ -106,7 +106,7 @@ static enumError gen_wdf ( ccp fname )
     SuperFile_t sf;
     InitializeSF(&sf);
 
-    enumError stat = CreateFile(&sf.f,fname,IOM_IS_IMAGE,1);
+    enumError stat = CreateWFile(&sf.f,fname,IOM_IS_IMAGE,1);
     if (stat)
 	return stat;
 
@@ -189,15 +189,15 @@ static void test_string_field()
 
 static void test_create_file()
 {
-    File_t f;
-    InitializeFile(&f);
+    WFile_t f;
+    InitializeWFile(&f);
 
-    CreateFile(&f,"pool/hallo.tmp",IOM_NO_STREAM,1);
-    SetupSplitFile(&f,OFT_PLAIN,0x80);
+    CreateWFile(&f,"pool/hallo.tmp",IOM_NO_STREAM,1);
+    SetupSplitWFile(&f,OFT_PLAIN,0x80);
     WriteAtF(&f,0x150,"Hallo\n",6);
     printf("*** created -> press ENTER: "); fflush(stdout); getchar();
 
-    CloseFile(&f,1);
+    CloseWFile(&f,1);
     printf("*** closed -> press ENTER: "); fflush(stdout); getchar();
 }
 
@@ -208,11 +208,11 @@ static void test_create_file()
 
 static void test_create_sparse_file()
 {
-    File_t f;
-    InitializeFile(&f);
-    CreateFile(&f,"/cygdrive/d/sparse.tmp",IOM_NO_STREAM,1);
+    WFile_t f;
+    InitializeWFile(&f);
+    CreateWFile(&f,"/cygdrive/d/sparse.tmp",IOM_NO_STREAM,1);
     WriteAtF(&f,0x10000000,"Hallo\n",6);
-    CloseFile(&f,0);
+    CloseWFile(&f,0);
 }
 
 //
@@ -222,15 +222,15 @@ static void test_create_sparse_file()
 
 static void test_splitted_file()
 {
-    File_t of;
-    InitializeFile(&of);
+    WFile_t of;
+    InitializeWFile(&of);
 
-    GenDestFileName(&of,"pool/","split-file",".xxx",false);
-    CreateFile( &of, 0, IOM_NO_STREAM,true);
+    GenDestWFileName(&of,"pool/","split-file",".xxx",false);
+    CreateWFile( &of, 0, IOM_NO_STREAM,true);
 
     printf("*** created -> press ENTER: "); fflush(stdout); getchar();
 
-    SetupSplitFile(&of,OFT_PLAIN,0x80);
+    SetupSplitWFile(&of,OFT_PLAIN,0x80);
 
     static char abc[] = "abcdefghijklmnopqrstuvwxyz\n";
     static char ABC[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ\n";
@@ -242,14 +242,14 @@ static void test_splitted_file()
     printf("*** written -> press ENTER: "); fflush(stdout); getchar();
 
     TRACELINE;
-    CloseFile(&of,0);
+    CloseWFile(&of,0);
 
     printf("*** closed -> press ENTER: "); fflush(stdout); getchar();
 
-    File_t f;
-    InitializeFile(&f);
-    OpenFileModify(&f,"pool/split-file.xxx",IOM_NO_STREAM);
-    SetupSplitFile(&f,OFT_PLAIN,0x100);
+    WFile_t f;
+    InitializeWFile(&f);
+    OpenWFileModify(&f,"pool/split-file.xxx",IOM_NO_STREAM);
+    SetupSplitWFile(&f,OFT_PLAIN,0x100);
 
     SeekF(&f,0xc0);
 
@@ -260,7 +260,7 @@ static void test_splitted_file()
     ReadAtF(&f,0,buf,sizeof(buf));
     printf("%.*s|\n",(int)sizeof(buf),buf);
 
-    CloseFile(&f,false);
+    CloseWFile(&f,false);
 }
 
 //
@@ -421,7 +421,7 @@ static void dump_wbfs ( WBFS_t * w, enumError err, ccp title )
     DASSERT(w);
     DASSERT(title);
 
-    printf("\n----- %s [%s] -----\n",title,GetErrorName(err));
+    printf("\n----- %s [%s] -----\n",title,GetErrorName(err,"?"));
     printf("%p: sf=%p wbfs=%p disc=%p slot=%d\n",
 		w, w->sf, w->wbfs, w->disc, w->disc_slot );
 
@@ -501,7 +501,7 @@ static void test_filename ( int argc, char ** argv )
 
     for ( i = 1; i < argc; i++ )
     {
-	NormalizeFileName(buf,buf+sizeof(buf),argv[i],true);
+	NormalizeFileName(buf,sizeof(buf),argv[i],true,use_utf8);
 	printf("%s -> %s\n",argv[i],buf);
    }
 }
@@ -759,7 +759,7 @@ void ResetAlignedIO ( AlignedIO_t *ai, bool close_fd )
 	    ai->fd = -1;
 	}
 
-	orig_free(ai->buf);
+	dclib_free(ai->buf);
 	ai->buf = 0;
 	ai->buf_size = 0;
 	ai->last_error = ai->last_errno = 0;
@@ -1097,17 +1097,6 @@ ssize_t WriteAtAlignedIO ( AlignedIO_t *ai, u64 fpos, const void *buf, uint size
 ///////////////			test_aligned_io()		///////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-#if SUPPORT_DIRECT && !defined(O_DIRECT) // [[DIRECT]]
-  #undef SUPPORT_DIRECT
-  #define SUPPORT_DIRECT 0
-#endif
-
-#ifndef O_DIRECT
-  #define O_DIRECT 0
-#endif
-
-///////////////////////////////////////////////////////////////////////////////
-
 static void test_aligned_io_open ( AlignedIO_t *ai, ccp fname, int flags, ccp info )
 {
     int fd = open(fname,flags,0666);
@@ -1356,9 +1345,9 @@ void test_sha1()
 
     for ( i = 0; i < N; i++ )
     {
-	RandomFill(h1,sizeof(h1));
+	MyRandomFill(h1,sizeof(h1));
 	memcpy(h2,h1,sizeof(h2));
-	RandomFill(source,sizeof(source));
+	MyRandomFill(source,sizeof(source));
 
 	SHA1(source,sizeof(source),h1);
 	WIT_SHA1(source,sizeof(source),h2);
@@ -1391,7 +1380,7 @@ static void test_bzip2 ( int argc, char ** argv )
 	printf("* Load %s\n",argv[i]);
 	char *fdata = MALLOC(fsize);
 	{
-	    enumError err = LoadFile(argv[i],0, 0,fdata,fsize, false,0,0);
+	    enumError err = LoadFile(argv[i],0, 0,fdata,fsize, 0,0,0);
 	    if (err)
 		goto abort;
 
@@ -1405,7 +1394,7 @@ static void test_bzip2 ( int argc, char ** argv )
 	    char fname[PATH_MAX];
 	    PathCatPPE(fname,sizeof(fname),0,argv[i],".enc");
 	    printf("  - Save %u bytes to %s\n",csize,fname);
-	    err = SaveFile(fname,0,true,false,cdata,csize,false);
+	    err = SaveFileOpt(fname,0,true,false,cdata,csize,false);
 	    if (err)
 		goto abort;
 
@@ -1418,7 +1407,7 @@ static void test_bzip2 ( int argc, char ** argv )
 
 	    PathCatPPE(fname,sizeof(fname),0,argv[i],".dec");
 	    printf("  - Save %u bytes to %s\n",dsize,fname);
-	    err = SaveFile(fname,0,true,false,ddata,dsize,false);
+	    err = SaveFileOpt(fname,0,true,false,ddata,dsize,false);
 	    if (err)
 		goto abort;
 
@@ -1699,7 +1688,7 @@ int patch_server
     }
 
     printf("SAVE main.dol.tmp\n");
-    SaveFile("main.dol.tmp",0,true,false,item->data,it->size,false);
+    SaveFileOpt("main.dol.tmp",0,true,false,item->data,it->size,false);
 
     wd_print_memmap(stdout,0,&it->disc->patch);
 
@@ -1858,7 +1847,7 @@ enum
 
 ///////////////////////////////////////////////////////////////////////////////
 
-static const CommandTab_t CommandTab[] =
+static const KeywordTab_t CommandTab[] =
 {
 	{ CMD_TEST,		"TEST",		"T",		0 },
 
@@ -1892,7 +1881,7 @@ static const CommandTab_t CommandTab[] =
 void help_exit()
 {
     printf("\nCommands:\n\n");
-    const CommandTab_t * cmd;
+    const KeywordTab_t * cmd;
     for ( cmd = CommandTab; cmd->name1; cmd++ )
 	if (cmd->name2)
 	    printf("  %-*s | %s\n",CMD1_FW,cmd->name1,cmd->name2);
@@ -1939,10 +1928,10 @@ int main ( int argc, char ** argv )
 	help_exit();
 
     int cmd_stat;
-    const CommandTab_t * cmd_ct = ScanCommand(&cmd_stat,argv[1],CommandTab);
+    const KeywordTab_t * cmd_ct = ScanKeyword(&cmd_stat,argv[1],CommandTab);
     if (!cmd_ct)
     {
-	PrintCommandError(CommandTab,argv[1],cmd_stat,0);
+	PrintKeywordError(CommandTab,argv[1],cmd_stat,0,0);
 	help_exit();
     }
 

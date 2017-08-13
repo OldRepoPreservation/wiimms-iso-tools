@@ -319,6 +319,18 @@
   { T_OPT_GP,	"ESC",		"E|esc",
 		0, 0 /* copy of wit */ },
 
+  { T_OPT_GO|F_IGNORE,
+		"COLOR",	"color",
+		0, 0 /* copy of wit */ },
+
+  { T_OPT_G|F_IGNORE,
+		"COLOR_256",	"256-colors|256colors",
+		0, 0 /* copy of wit */ },
+
+  { T_OPT_G|F_IGNORE,
+		"NO_COLOR",	"no-colors|nocolors",
+		0, 0 /* copy of wit */ },
+
   { T_OPT_GP,	"IO",		"io",
 		0, 0 /* copy of wit */ },
 

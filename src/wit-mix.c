@@ -1,7 +1,7 @@
 
 #define _GNU_SOURCE 1
 
-#include "debug.h"
+#include "dclib/dclib-debug.h"
 #include "wiidisc.h"
 #include "lib-std.h"
 #include "lib-sf.h"
@@ -281,7 +281,7 @@ static enumError scan_mix_param
     DASSERT(mp);
     mp->disc_type = WD_DT_UNKNOWN;
 
-    u32 max_part = OptionUsed[OPT_OVERLAY]
+    u32 max_part = InfoUI_wit.opt_used[OPT_OVERLAY]
 			? MAX_MIX_PERM
 			: WII_MAX_PARTITIONS;
 
@@ -1148,13 +1148,13 @@ static enumError create_output_image
     MixParam_t	* mp		// valid pointer to mix param + data
 )
 {
-    enumError err = CreateFile( &mp->fo.f, 0, IOM_IS_IMAGE,
-					OptionUsed[OPT_OVERWRITE] ? 1 : 0 );
+    enumError err = CreateWFile( &mp->fo.f, 0, IOM_IS_IMAGE,
+					InfoUI_wit.opt_used[OPT_OVERWRITE] ? 1 : 0 );
     if (err)
 	return err;
 
     if (opt_split)
-	SetupSplitFile(&mp->fo.f,mp->fo.iod.oft,opt_split_size);
+	SetupSplitWFile(&mp->fo.f,mp->fo.iod.oft,opt_split_size);
 
     err = SetupWriteSF(&mp->fo,mp->fo.iod.oft);
     if (err)
@@ -1497,7 +1497,7 @@ enumError cmd_mix()
     //-----------		overlay calculations		-----------
     //---------------------------------------------------------------------
 
-    if ( mp.n_mix > 1 && OptionUsed[OPT_OVERLAY] )
+    if ( mp.n_mix > 1 && InfoUI_wit.opt_used[OPT_OVERLAY] )
     {
 	permutate_mix(&mp);
 	if ( mp.max_sector > mp.max_end )
@@ -1613,7 +1613,7 @@ enumError cmd_mix()
     ccp destfile = IsDirectory(opt_dest,true) ? "a.wdf" : "";
     const enumOFT oft = CalcOFT(output_file_type,opt_dest,destfile,OFT__DEFAULT);
     mp.fo.f.create_directory = opt_mkdir;
-    GenImageFileName(&mp.fo.f,opt_dest,destfile,oft);
+    GenImageWFileName(&mp.fo.f,opt_dest,destfile,oft);
     SetupIOD(&mp.fo,oft,oft);
 
 

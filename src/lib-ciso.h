@@ -37,7 +37,7 @@
 #ifndef WIT_LIB_CISO_H
 #define WIT_LIB_CISO_H 1
 
-#include "types.h"
+#include "dclib/dclib-types.h"
 #include "libwbfs.h"
 #include "lib-std.h"
 

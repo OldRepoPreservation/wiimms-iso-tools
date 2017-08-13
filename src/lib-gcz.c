@@ -40,7 +40,7 @@
   #include <zlib.h>
 #endif
 
-#include "debug.h"
+#include "dclib/dclib-debug.h"
 #include "lib-gcz.h"
 #include "lib-sf.h"
 #include "patch.h"
@@ -125,7 +125,7 @@ static u32 CalcAdler32 ( const u8 *data, uint len )
 ///////////////////////////////////////////////////////////////////////////////
 
 static enumError CheckAdler32
-	( File_t *f, uint block, u32 adler32, const void *data, uint data_size )
+	( WFile_t *f, uint block, u32 adler32, const void *data, uint data_size )
 {
     DASSERT(f);
     DASSERT(data);
@@ -141,28 +141,6 @@ static enumError CheckAdler32
     return ERR_GCZ_INVALID;
 }
 
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-
-static void write_le32 ( void * le_data_ptr, u32 data )
-{
-    DASSERT(le_data_ptr);
-    u8 * dest = le_data_ptr;
-    *dest++ = data; data >>= 8;
-    *dest++ = data; data >>= 8;
-    *dest++ = data;
-    *dest   = data >> 8;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-static void write_le64 ( void * le_data_ptr, u64 data )
-{
-    DASSERT(le_data_ptr);
-    write_le32( le_data_ptr, data );
-    write_le32( (u8*)le_data_ptr+4, data >> 32 );
-}
-
 //
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////			    Interface			///////////////
@@ -170,7 +148,7 @@ static void write_le64 ( void * le_data_ptr, u64 data )
 
 #ifndef HAVE_ZLIB
 
- static enumError ZLIB_MISSING ( File_t * f )
+ static enumError ZLIB_MISSING ( WFile_t * f )
  {
     DASSERT(f);
     if (!f->disable_errors)
@@ -274,13 +252,13 @@ void ResetGCZ( GCZ_t *gcz )
 
 //
 ///////////////////////////////////////////////////////////////////////////////
-///////////////		    GCZ: File_t level reading		///////////////
+///////////////		    GCZ: WFile_t level reading		///////////////
 ///////////////////////////////////////////////////////////////////////////////
 
 enumError LoadHeadGCZ
 (
     GCZ_t		*gcz,		// pointer to data, will be initalized
-    File_t		*f		// file to read
+    WFile_t		*f		// file to read
 )
 {
     DASSERT(gcz);
@@ -319,7 +297,7 @@ enumError LoadHeadGCZ
 enumError LoadDataGCZ
 (
     GCZ_t		*gcz,		// pointer to data, will be initalized
-    File_t		*f,		// source file
+    WFile_t		*f,		// source file
     off_t		off,		// file offset
     void		*buf,		// destination buffer
     size_t		count		// number of bytes to read

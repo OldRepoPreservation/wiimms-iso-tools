@@ -55,7 +55,7 @@
 
 typedef struct BZIP2_t
 {
-    File_t		* file;		// IO file
+    WFile_t		* file;		// IO file
     BZFILE		* handle;	// bzip2 handle
     int			compr_level;	// active compression level
 
@@ -95,7 +95,7 @@ u32 CalcMemoryUsageBZIP2
 enumError EncBZIP2_Open
 (
     BZIP2_t		* bz,		// data structure, will be initialized
-    File_t		* file,		// destination file
+    WFile_t		* file,		// destination file
     int			compr_level	// valid are 1..9 / 0: use default value
 );
 
@@ -124,7 +124,7 @@ enumError EncBZIP2_Close
 enumError DecBZIP2_Open
 (
     BZIP2_t		* bz,		// data structure, will be initialized
-    File_t		* file		// source file
+    WFile_t		* file		// source file
 );
 
 //-----------------------------------------------------------------------------

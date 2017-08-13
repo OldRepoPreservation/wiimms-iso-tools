@@ -37,7 +37,7 @@
 #ifndef WIT_MATCH_PATTERN_H
 #define WIT_MATCH_PATTERN_H 1
 
-#include "types.h"
+#include "dclib/dclib-types.h"
 #include "wiidisc.h"
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -98,16 +98,6 @@ bool MatchFilePattern
 int MatchFilePatternFST
 (
 	struct wd_iterator_t *it	// iterator struct with all infos
-);
-
-///////////////////////////////////////////////////////////////////////////////
-// low level match pattern function
-
-bool MatchPattern
-(
-    ccp		pattern,	// pattern text
-    ccp		text,		// raw text
-    char	path_sep	// path separator character, standard is '/'
 );
 
 ///////////////////////////////////////////////////////////////////////////////

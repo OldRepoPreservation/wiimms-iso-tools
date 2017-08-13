@@ -48,7 +48,7 @@
 #include <dirent.h>
 #include <time.h>
 
-#include "debug.h"
+#include "dclib/dclib-debug.h"
 #include "wbfs-interface.h"
 #include "titles.h"
 
@@ -339,10 +339,10 @@ enumError AnalyzePartitions ( FILE * outfile, bool non_found_is_ok, bool scan_wb
 	if ( info->part_mode == PM_UNKNOWN )
 	{
 	    ccp read_error = 0;
-	    File_t F;
-	    InitializeFile(&F);
+	    WFile_t F;
+	    InitializeWFile(&F);
 	    F.disable_errors = info->source != PS_PARAM || !outfile;
-	    enumError stat = OpenFile(&F,info->real_path,IOM_IS_WBFS_PART);
+	    enumError stat = OpenWFile(&F,info->real_path,IOM_IS_WBFS_PART);
 	    if (stat)
 	    {
 		if ( info->source == PS_AUTO_IGNORE )
@@ -422,7 +422,7 @@ enumError AnalyzePartitions ( FILE * outfile, bool non_found_is_ok, bool scan_wb
 
 	_done:;
 	    int syserr = errno;
-	    ClearFile(&F,false);
+	    ClearWFile(&F,false);
 
 	    if ( read_error && info->part_mode != PM_IGNORE )
 	    {
@@ -936,7 +936,7 @@ enumError OpenParWBFS
 	snprintf(fname,sizeof(fname),format,1);
 	struct stat st;
 	if (!stat(fname,&st))
-	    SetupSplitFile(&sf->f,OFT_WBFS,0);
+	    SetupSplitWFile(&sf->f,OFT_WBFS,0);
 	if ( balloc_mode == WBFS_BA_AUTO )
 	    balloc_mode = WBFS_BA_FIRST; // better because of sparse effect
     }
@@ -1119,8 +1119,8 @@ static enumError OpenWBFSHelper
     InitializeSF(sf);
     sf->f.disable_errors = !print_err;
     enumError err = open_modify
-			? OpenFileModify(&sf->f,filename,IOM_IS_WBFS_PART)
-			: OpenFile(&sf->f,filename,IOM_IS_WBFS_PART);
+			? OpenWFileModify(&sf->f,filename,IOM_IS_WBFS_PART)
+			: OpenWFile(&sf->f,filename,IOM_IS_WBFS_PART);
     if (err)
 	goto abort;
     sf->f.disable_errors = false;
@@ -2079,7 +2079,7 @@ enumError DumpWBFS
 
 int ScanOptWbfsAlloc ( ccp arg )
 {
-    static const CommandTab_t tab[] =
+    static const KeywordTab_t tab[] =
     {
 	{ WBFS_BA_AUTO,		"AUTO",		"DEFAULT",	0 },
 	{ WBFS_BA_FIRST,	"FIRST",	"FRAG",		0 },
@@ -2087,7 +2087,7 @@ int ScanOptWbfsAlloc ( ccp arg )
 	{0,0,0,0}
     };
     
-    const CommandTab_t * cmd = ScanCommand(0,arg,tab);
+    const KeywordTab_t * cmd = ScanKeyword(0,arg,tab);
     if (cmd)
     {
 	opt_wbfs_alloc = cmd->id;
@@ -2122,7 +2122,7 @@ AWRecord_t * AW_get_record ( AWData_t * awd )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-static void AW_header ( AWData_t * awd, File_t * f )
+static void AW_header ( AWData_t * awd, WFile_t * f )
 {
     TRACE("AW_header(%p,%p)\n",awd,f);
     ASSERT(awd);
@@ -2201,7 +2201,7 @@ static AWRecord_t * AW_insert_inode
 
 //-----------------------------------------------------------------------------
 
-static void AW_inodes ( AWData_t * awd, File_t * f, ccp data )
+static void AW_inodes ( AWData_t * awd, WFile_t * f, ccp data )
 {
     TRACE("AW_inodes(%p,%p,%p)\n",awd,f,data);
     ASSERT(awd);
@@ -2302,7 +2302,7 @@ static void AW_inodes ( AWData_t * awd, File_t * f, ccp data )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-static void AW_discs ( AWData_t * awd, File_t * f, ccp data )
+static void AW_discs ( AWData_t * awd, WFile_t * f, ccp data )
 {
     TRACE("AW_discs(%p,%p,%p)\n",awd,f,data);
     ASSERT(awd);
@@ -2432,7 +2432,7 @@ static void AW_discs ( AWData_t * awd, File_t * f, ccp data )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-static void AW_calc ( AWData_t * awd, File_t * f, u32 sec_size, bool old )
+static void AW_calc ( AWData_t * awd, WFile_t * f, u32 sec_size, bool old )
 {
     TRACE("AW_calc(%p,%p,%u,%d)\n",awd,f,sec_size,old);
     ASSERT(awd);
@@ -2494,7 +2494,7 @@ static void AW_calc ( AWData_t * awd, File_t * f, u32 sec_size, bool old )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-int AnalyzeWBFS ( AWData_t * awd, File_t * f )
+int AnalyzeWBFS ( AWData_t * awd, WFile_t * f )
 {
     ASSERT(awd);
     ASSERT(f);
@@ -4109,7 +4109,7 @@ enumError OpenWDiscSF ( WBFS_t * w )
     sf->wbfs_fragments = wbfs_get_disc_fragments(w->disc,&disc_blocks);
     sf->file_size = (off_t)disc_blocks * w->wbfs->wbfs_sec_sz;
 
-    CopyFileAttribStat( &sf->f.fatt, &sf->f.st, false );
+    SetFileAttrib( &sf->f.fatt, 0, &sf->f.st );
     if ( w->disc->header && w->disc->header->dhead )
     {
 	const wbfs_inode_info_t * ii
@@ -4138,7 +4138,7 @@ enumError CloseWDiscSF ( WBFS_t * w )
 	    sf->wbfs = 0;
 	}
 
-	CopyFileAttribStat(&sf->f.fatt,&sf->f.st,false);
+	SetFileAttrib(&sf->f.fatt,0,&sf->f.st);
     }
     return ERR_OK;
 }
@@ -4282,7 +4282,7 @@ enumError AddWDisc ( WBFS_t * w, SuperFile_t * sf, const wd_select_t * psel )
     // calculate the wbfs usage again
     CalcWBFSUsage(w);
 
-    TRACE("AddWDisc() returns err=%d [%s]\n",err,GetErrorName(err));
+    TRACE("AddWDisc() returns err=%d [%s]\n",err,GetErrorName(err,"?"));
     return err;
 }
 
@@ -4343,7 +4343,7 @@ enumError RemoveWDisc
     // calculate the wbfs usage again
     CalcWBFSUsage(w);
 
-    TRACE("RemoveWDisc(%s) returns err=%d [%s]\n",id6,err,GetErrorName(err));
+    TRACE("RemoveWDisc(%s) returns err=%d [%s]\n",id6,err,GetErrorName(err,"?"));
     return err;
 }
 

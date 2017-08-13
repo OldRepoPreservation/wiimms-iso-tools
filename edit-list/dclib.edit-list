@@ -1,2 +1,9 @@
+../dclib/dclib-file.[ch] ;
+../dclib/dclib-basics.[ch] ;
+../dclib/dclib-types.[ch] ;
+../dclib/dclib-debug.[ch] ;
+../dclib/*.[ch] ;
+../dclib/*.inc ;
 ../src/dclib-utf8.[ch] ;
-@+all-source.edit-list
+-y  400 ../dclib/dclib-file.c
+-y  170 ../dclib/dclib-file.h
