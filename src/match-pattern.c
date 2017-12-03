@@ -9,12 +9,12 @@
  *                         \/  \/     |_|    |_|                           *
  *                                                                         *
  *                           Wiimms ISO Tools                              *
- *                         http://wit.wiimm.de/                            *
+ *                         https://wit.wiimm.de/                           *
  *                                                                         *
  ***************************************************************************
  *                                                                         *
  *   This file is part of the WIT project.                                 *
- *   Visit http://wit.wiimm.de/ for project details and sources.           *
+ *   Visit https://wit.wiimm.de/ for project details and sources.          *
  *                                                                         *
  *   Copyright (c) 2009-2017 by Dirk Clemens <wiimm@wiimm.de>              *
  *                                                                         *
@@ -103,9 +103,9 @@ static const struct macro_tab_t macro_tab[] =
     { 5, "nosys",	"-/sys/" },
     { 5, "files",	"+/files/" },
     { 7, "nofiles",	"-/files/" },
-    { 3, "wit",		"2+/h3.bin;1+/sys/fst.bin;+" },
-    { 3, "wwt",		"2+/h3.bin;1+/sys/fst.bin;+" },
-    { 7, "compose",	"+/cert.bin;3+/disc/;2+/*$;1+/sys/fst.bin;+" },
+    { 3, "wit",		"3+/h3.bin;1+/sys/fst.bin;1+/sys/fst+.bin;+" },
+    { 3, "wwt",		"3+/h3.bin;2+/sys/fst.bin;1+/sys/fst+.bin;+" },
+    { 7, "compose",	"+/cert.bin;4+/disc/;3+/*$;2+/sys/fst.bin;1+/sys/fst+.bin;+" },
     { 4, "neek",	"3+/setup.txt;2+/h3.bin;1+/disc/;+" },
     { 5, "sneek",	"3+/setup.txt;2+/h3.bin;1+/disc/;+" },
 

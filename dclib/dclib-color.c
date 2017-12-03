@@ -887,7 +887,7 @@ bool GetAutoTermSize()
 	if (memcmp(&auto_term_size,&size,sizeof(size)))
 	{
 	    auto_term_size = size;
-	    if (!++auto_term_resized);
+	    if (!++auto_term_resized)
 		auto_term_resized++;
 	    return true;
 	}
@@ -899,7 +899,7 @@ bool GetAutoTermSize()
 
 static void Signal_SIGWINCH ( int signal )
 {
-    if (!++auto_term_size_dirty);
+    if (!++auto_term_size_dirty)
 	auto_term_size_dirty++;
 }
 

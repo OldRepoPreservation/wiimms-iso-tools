@@ -733,7 +733,7 @@ u64 GetAutoAllowIP4BySock ( const AllowIP4_t *ai, int sock )
 
     struct sockaddr_in sa;
     socklen_t sa_len = sizeof(sa);
-    if ( getpeername(sock,&sa,&sa_len) || sa.sin_family != AF_INET )
+    if ( getpeername(sock,(struct sockaddr*)&sa,&sa_len) || sa.sin_family != AF_INET )
 	return ai->fallback_mode;
 
     return GetAutoAllowIP4ByAddr(ai,ntohl(sa.sin_addr.s_addr));
@@ -2080,56 +2080,12 @@ int SendDirectTCPStream
     DASSERT(ts);
     DASSERT(data||!size);
 
- #if 1
     uint count = 0;
     const int stat
 	= SendDirectGrowBuffer(&ts->obuf,ts->sock,flush_output,data,size,&count);
     if ( count > 0 )
 	UpdateSendStatTCPStream(ts,count,0);
     return stat;
- #else
-    const u8 *d = data;
-    if ( ts->sock != -1 )
-    {
-	int final_stat = 0;
-	if ( ts->obuf.disabled <= 0 )
-	{
-	    if ( flush_output && ts->obuf.used )
-	    {
-		ssize_t stat = send(ts->sock,ts->obuf.ptr,ts->obuf.used,MSG_DONTWAIT);
-		if ( stat > 0 )
-		{
-		    UpdateSendStatTCPStream(ts,stat,0);
-		    DropGrowBuffer(&ts->obuf,stat);
-		}
-	    }
-
-	    if ( !ts->obuf.used && size )
-	    {
-		ssize_t stat = send(ts->sock,d,size,MSG_DONTWAIT);
-		if ( stat > 0 )
-		{
-		    UpdateSendStatTCPStream(ts,stat,0);
-		    size -= stat;
-		    if (!size) // likely
-			return stat;
-
-		    d += stat;
-		    final_stat = stat;
-
-		    // for this case: force growing buffer (because of 'all or none')
-		    PrepareGrowBuffer(&ts->obuf,size,true);
-		}
-	    }
-	}
-
-	if ( size && size <= GetSpaceGrowBuffer(&ts->obuf) )
-	    final_stat += InsertGrowBuffer(&ts->obuf,d,size);
-	return final_stat;
-    }
-
-    return -1;
- #endif
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -2195,6 +2151,128 @@ int PrintDirectTCPStream
     }
 
     return SendDirectTCPStream(ts,flush_output,0,0);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+int PrintBinary1TCPStream
+(
+    TCPStream_t	*ts,		// NULL or destination
+    ccp		cmd,		// command name
+    cvp		bin_data,	// pointer to binary data
+    uint	bin_size,	// size of binary data
+    ccp		format,		// NULL or format string with final ';'
+    ...				// parameters for 'format'
+)
+{
+    DASSERT(cmd);
+    DASSERT(bin_data||!bin_size);
+
+    if (!ts)
+	return -1;
+
+    char buf[10000], *end_buf = buf + sizeof(buf) - 4;
+    char *dest = StringCopyE(buf,end_buf,cmd);
+    if ( dest + 6 + bin_size >= end_buf )
+	return -1;
+
+    *dest++ = ' ';
+    *dest++ = 1;
+    write_be16(dest,bin_size);
+    dest += 2;
+    memcpy(dest,bin_data,bin_size);
+    dest += bin_size;
+
+    *dest++ = ' ';
+    *dest++ = '=';
+
+    int len;
+    if (format)
+    {
+	va_list arg;
+	va_start(arg,format);
+	len = vsnprintf(dest,end_buf-dest,format,arg);
+	va_end(arg);
+
+	if ( len < 0 )
+	    return -1;
+	len += dest - buf;
+	if ( len >= sizeof(buf) )
+	    return -1;
+    }
+    else
+    {
+	*dest++ = ';';
+	len = dest - buf;
+    }
+
+    return SendDirectTCPStream(ts,false,buf,len);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+int PrintBinary2TCPStream
+(
+    TCPStream_t	*ts,		// NULL or destination
+    ccp		cmd,		// command name
+    cvp		bin1_data,	// pointer to binary data
+    uint	bin1_size,	// size of binary data
+    cvp		bin2_data,	// pointer to binary data
+    uint	bin2_size,	// size of binary data
+    ccp		format,		// NULL or format string with final ';'
+    ...				// parameters for 'format'
+)
+{
+    DASSERT(cmd);
+    DASSERT(bin1_data||!bin1_size);
+    DASSERT(bin2_data||!bin2_size);
+
+    if (!ts)
+	return -1;
+
+    char buf[10000], *end_buf = buf + sizeof(buf) - 4;
+    char *dest = StringCopyE(buf,end_buf,cmd);
+    if ( dest + 9 + bin1_size + bin2_size >= end_buf )
+	return -1;
+
+    *dest++ = ' ';
+    *dest++ = 1;
+    write_be16(dest,bin1_size);
+    dest += 2;
+    memcpy(dest,bin1_data,bin1_size);
+    dest += bin1_size;
+
+    *dest++ = 1;
+    write_be16(dest,bin2_size);
+    dest += 2;
+    memcpy(dest,bin2_data,bin2_size);
+    dest += bin2_size;
+
+    *dest++ = ' ';
+    *dest++ = '=';
+
+    int len;
+    if (format)
+    {
+	va_list arg;
+	va_start(arg,format);
+	len = vsnprintf(dest,end_buf-dest,format,arg);
+	va_end(arg);
+
+	if ( len < 0 )
+	    return -1;
+	len += dest - buf;
+	if ( len >= sizeof(buf) )
+	    return -1;
+    }
+    else
+    {
+	*dest++ = ';';
+	len = dest - buf;
+    }
+
+    return SendDirectTCPStream(ts,false,buf,len);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

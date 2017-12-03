@@ -10,12 +10,12 @@
     ##                      \/  \/     |_|    |_|                      ##
     ##                                                                 ##
     ##                        Wiimms ISO Tools                         ##
-    ##                      http://wit.wiimm.de/                       ##
+    ##                      https://wit.wiimm.de/                       ##
     ##                                                                 ##
     #####################################################################
     ##                                                                 ##
     ##   This file is part of the WIT project.                         ##
-    ##   Visit http://wit.wiimm.de/ for project details and sources.   ##
+    ##   Visit https://wit.wiimm.de/ for project details and sources.   ##
     ##                                                                 ##
     ##   Copyright (c) 2009-2017 by Dirk Clemens <wiimm@wiimm.de>      ##
     ##                                                                 ##
@@ -49,6 +49,7 @@ WIN_INSTALL_PATH="@@WIN-INSTALL-PATH@@"
 echo "* setup"
 
 export PATH=".:$PATH"
+mkdir -p /tmp
 
 key="/machine/SOFTWARE/Microsoft/Windows/CurrentVersion/ProgramFilesDir"
 if ! WIN_PROG_PATH="$(regtool get "$key")" || [[ $WIN_PROG_PATH = "" ]]

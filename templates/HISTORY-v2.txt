@@ -185,7 +185,7 @@ wit v2.10a r4118 - 2012-10-10
    *NOTE: Filesystem mapping is only supported on real linux systems (yet),
           but neither for Mac nor for Cygwin.
  - The image builder search now the file 'exclude.fst' to exclude files from
-   the composing. See http://wit.wiimm.de/info/composing.html#part for details.
+   the composing. See https://wit.wiimm.de/info/composing.html#part for details.
 
 
 wit v2.11a r4233 - 2013-02-09
@@ -240,7 +240,7 @@ wit v2.21a r4489 - 2013-06-15
    between the virtual address and the file offset is printed.
  - New command: wit DOLPATCH: Patch a DOL file by reading a Riivolution XML
    file and scanning all memory tags.
-   -> Read http://wit.wiimm.de/cmd/wit/dolpatch for details.
+   -> Read https://wit.wiimm.de/cmd/wit/dolpatch for details.
  - If extracting an image, the file 'setup.txt' contains now a new parameter:
    "image-type = TYPE". It shows the image type of the source image.
    If cretaing an image and file 'setup.txt' contains this paramater with a
@@ -267,7 +267,7 @@ wit v2.22a r4516 - 2013-06-22
 
  - Command "wit DOLPATCH" accepts now more commands and is able to create new
    TEXT and DATA sections.
-   -> Read http://wit.wiimm.de/cmd/wit/dolpatch for details.
+   -> Read https://wit.wiimm.de/cmd/wit/dolpatch for details.
  - New option: --tt-id=ID: This is a short cut for '--ticket=ID --tmd=ID'.
    If TICKET and TMD differ, the game will freeze after loading. So it make
    sense to change only TICKET and TMD IDs together.
@@ -349,7 +349,7 @@ wit v2.27a r4908 - 2014-01-31
  - New command for wit+wwt: FEATURES: Print a list of supported features. The
    output is machine readable. Scripts may use "wit features -qq" and check
    the exit status.
- - Reading support for the comming WDF v2. Details: http://wit.wiimm.de/WDF
+ - Reading support for the comming WDF v2. Details: https://wit.wiimm.de/WDF
    Writing support will follow, if EDIT is implemented too.
 
 
@@ -366,7 +366,7 @@ wit v2.28a r4980 - 2014-03-01
     - Option --align-wdf defines an alignment between 1 and 1GiB (power of 2)
       and optional the minimal hole size before creating a new chunk.
     - 'wit EDIT' supports --wdf1 and --wdf2 to allow version conversions.
-   For technical details about WDF see: http://wit.wiimm.de/WDF
+   For technical details about WDF see: https://wit.wiimm.de/WDF
  - Support of split files of CleanRip: If reading a plain ISO file named
    '*.part0', the other parts are detected as continuation files.
  - Windows only: Cygwin update to v1.7.28 2014-02-09.

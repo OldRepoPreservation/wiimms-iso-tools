@@ -9,12 +9,12 @@
  *                         \/  \/     |_|    |_|                           *
  *                                                                         *
  *                           Wiimms ISO Tools                              *
- *                         http://wit.wiimm.de/                            *
+ *                         https://wit.wiimm.de/                           *
  *                                                                         *
  ***************************************************************************
  *                                                                         *
  *   This file is part of the WIT project.                                 *
- *   Visit http://wit.wiimm.de/ for project details and sources.           *
+ *   Visit https://wit.wiimm.de/ for project details and sources.          *
  *                                                                         *
  *   Copyright (c) 2009-2017 by Dirk Clemens <wiimm@wiimm.de>              *
  *                                                                         *
@@ -101,13 +101,14 @@ typedef enum enumOptions
 	OPT_COLOR_256,
 	OPT_NO_COLOR,
 	OPT_IO,
+	OPT_DSYNC,
 	OPT_DIRECT,
 	OPT_ALIGN_WDF,
 	OPT_TEST,
 	OPT_OLD,
 	OPT_NEW,
 
-	OPT__N_TOTAL // == 46
+	OPT__N_TOTAL // == 47
 
 } enumOptions;
 
@@ -265,6 +266,7 @@ typedef enum enumGetOpt
 	GO_COLOR_256,
 	GO_NO_COLOR,
 	GO_IO,
+	GO_DSYNC,
 	GO_DIRECT,
 	GO_CHUNK,
 	GO_LIMIT,
@@ -298,7 +300,8 @@ typedef enum enumGetOpt
 //extern const char OptionShort[];
 //extern const struct option OptionLong[];
 //extern u8 OptionUsed[OPT__N_TOTAL+1];
-//extern const u8 OptionIndex[UIOPT_INDEX_SIZE];
+//extern const OptionIndex_t OptionIndex[UIOPT_INDEX_SIZE];
+//UIOPT_INDEX_SIZE := 0x100 = 256
 //extern const InfoCommand_t CommandInfo[CMD__N+1];
 extern const InfoUI_t InfoUI_wdf;
 

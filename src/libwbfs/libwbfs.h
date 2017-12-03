@@ -9,12 +9,12 @@
  *                         \/  \/     |_|    |_|                           *
  *                                                                         *
  *                           Wiimms ISO Tools                              *
- *                         http://wit.wiimm.de/                            *
+ *                         https://wit.wiimm.de/                           *
  *                                                                         *
  ***************************************************************************
  *                                                                         *
  *   This file is part of the WIT project.                                 *
- *   Visit http://wit.wiimm.de/ for project details and sources.           *
+ *   Visit https://wit.wiimm.de/ for project details and sources.          *
  *                                                                         *
  *   Copyright (c) 2009 Kwiirk                                             *
  *   Copyright (c) 2009-2017 by Dirk Clemens <wiimm@wiimm.de>              *
@@ -129,8 +129,6 @@ typedef enum wbfs_balloc_mode_t // block allocation mode
 } wbfs_balloc_mode_t;
 
 //-----------------------------------------------------------------------------
-
-typedef char id6_t[7];
 
 typedef struct wbfs_t
 {

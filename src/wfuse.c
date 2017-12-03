@@ -9,12 +9,12 @@
  *                         \/  \/     |_|    |_|                           *
  *                                                                         *
  *                           Wiimms ISO Tools                              *
- *                         http://wit.wiimm.de/                            *
+ *                         https://wit.wiimm.de/                           *
  *                                                                         *
  ***************************************************************************
  *                                                                         *
  *   This file is part of the WIT project.                                 *
- *   Visit http://wit.wiimm.de/ for project details and sources.           *
+ *   Visit https://wit.wiimm.de/ for project details and sources.          *
  *                                                                         *
  *   Copyright (c) 2009-2017 by Dirk Clemens <wiimm@wiimm.de>              *
  *                                                                         *
@@ -138,7 +138,7 @@ static void add_arg ( char * arg1, char * arg2 )
 static void help_exit()
 {
     fputs( TITLE "\n", stdout );
-    PrintHelpCmd(&InfoUI,stdout,0,0,0,0);
+    PrintHelpCmd(&InfoUI_wfuse,stdout,0,0,0,0,URI_HOME);
     exit(ERR_OK);
 }
 
@@ -193,7 +193,7 @@ static enumError CheckOptions ( int argc, char ** argv )
       if ( opt_stat == -1 )
 	break;
 
-      RegisterOptionByName(&InfoUI,opt_stat,1,false);
+      RegisterOptionByName(&InfoUI_wfuse,opt_stat,1,false);
 
       switch ((enumGetOpt)opt_stat)
       {
@@ -218,7 +218,7 @@ static enumError CheckOptions ( int argc, char ** argv )
       }
     }
  #ifdef DEBUG
-    DumpUsedOptions(&InfoUI,TRACE_FILE,11);
+    DumpUsedOptions(&InfoUI_wfuse,TRACE_FILE,11);
  #endif
 
     return err ? ERR_SYNTAX : ERR_OK;
@@ -340,7 +340,7 @@ static DiscFile_t * get_disc_file ( uint slot )
 	    }
 	    ResetWBFS(df->wbfs);
 	    FREE(df->wbfs);
-	    memset(df,0,sizeof(df));
+	    memset(df,0,sizeof(*df));
 	    n_dfile--;
 	}
 
@@ -352,7 +352,7 @@ static DiscFile_t * get_disc_file ( uint slot )
 
     if (found_df)
     {
-	memset(found_df,0,sizeof(found_df));
+	memset(found_df,0,sizeof(*found_df));
 	WBFS_t * wbfs = MALLOC(sizeof(*wbfs));
 	InitializeWBFS(wbfs);
 	enumError err = OpenWBFS(wbfs,source_file,false,true,0);

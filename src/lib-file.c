@@ -9,12 +9,12 @@
  *                         \/  \/     |_|    |_|                           *
  *                                                                         *
  *                           Wiimms ISO Tools                              *
- *                         http://wit.wiimm.de/                            *
+ *                         https://wit.wiimm.de/                           *
  *                                                                         *
  ***************************************************************************
  *                                                                         *
  *   This file is part of the WIT project.                                 *
- *   Visit http://wit.wiimm.de/ for project details and sources.           *
+ *   Visit https://wit.wiimm.de/ for project details and sources.          *
  *                                                                         *
  *   Copyright (c) 2009-2017 by Dirk Clemens <wiimm@wiimm.de>              *
  *                                                                         *
@@ -94,6 +94,7 @@
 ///////////////                   file support                  ///////////////
 ///////////////////////////////////////////////////////////////////////////////
 
+int opt_dsync = 0;
 int opt_direct = 0;
 enumIOMode opt_iomode = IOM__IS_DEFAULT | IOM_FORCE_STREAM;
 
@@ -587,6 +588,15 @@ static enumError XOpenWFileHelper
 	f->is_reading = true;
 	f->is_writing = true;
     }
+
+ #ifdef O_DSYNC
+    if ( opt_dsync && iomode == IOM_IS_WBFS_PART )
+    {
+	PRINT("\e[35;1m ---> O_DSYNC iom=%d\e[0m\n",iomode);
+	f->active_open_flags |= O_DSYNC;
+    }
+ #endif
+
     f->active_open_flags = f->active_open_flags & ~mode_mask | mode;
 
     if ( f->fd == -1 )

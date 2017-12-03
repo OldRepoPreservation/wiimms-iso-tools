@@ -9,12 +9,12 @@
  *                         \/  \/     |_|    |_|                           *
  *                                                                         *
  *                           Wiimms ISO Tools                              *
- *                         http://wit.wiimm.de/                            *
+ *                         https://wit.wiimm.de/                           *
  *                                                                         *
  ***************************************************************************
  *                                                                         *
  *   This file is part of the WIT project.                                 *
- *   Visit http://wit.wiimm.de/ for project details and sources.           *
+ *   Visit https://wit.wiimm.de/ for project details and sources.          *
  *                                                                         *
  *   Copyright (c) 2009-2017 by Dirk Clemens <wiimm@wiimm.de>              *
  *                                                                         *
@@ -1336,6 +1336,7 @@ enumError CheckOptions ( int argc, char ** argv )
 	case GO_COLOR_256:	opt_colorize = COLMD_256_COLORS; break;
 	case GO_NO_COLOR:	opt_colorize = -1; break;
 	case GO_IO:		ScanIOMode(optarg); break;
+	case GO_DSYNC:		opt_dsync++; break;
 	case GO_DIRECT:		opt_direct++; break;
 	case GO_CHUNK:		opt_chunk = true; break;
 	case GO_LONG:		opt_chunk = true; long_count++; break;

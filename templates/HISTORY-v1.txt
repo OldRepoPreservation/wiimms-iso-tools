@@ -195,7 +195,7 @@ wit v1.14a r1506 - 2010-08-09
    Fake signing is not necessary, but the partition becomes invalid, because
    the content of some files is not copied.
  - New qualifier for "wit MIX": "IGNORE ruleset": Ignore files when copying a
-   disc image. See http://wit.wiimm.de/wit/cmd-mix.html#ignore for details.
+   disc image. See https://wit.wiimm.de/wit/cmd-mix.html#ignore for details.
  - Some modification for expanding '@file' parameters: wit MIX needs control.
  - wit MIX: A new algorithm for 2 partitions: It tries every possible shift to
    find the best overlay. All holes in both partitions are relevant.
@@ -408,7 +408,7 @@ wit v1.23a r2092 - 2010-12-10
  - wwt EXTRACT + REMOVE + TOUCH + VERIFY:
    These commands accept now ID6 pattern like '...P' or '+1'. Each '.' is a
    wildcard that matches any single character. A '+' matches any number of
-   characters. For details see http://wit.wiimm.de/info/disc-id.html
+   characters. For details see https://wit.wiimm.de/info/disc-id.html
  - wwt EXTRACT is now able to patch while extracting and to create WIA files.
    It support also the options --fst --pmode --psel --raw --files and --sneek.
  - Cygwin will support UTF-8 by default.
@@ -476,7 +476,7 @@ wit v1.26a r2223 - 2011-01-27
       "TICKET & TMD are well signed. Partition is encrypted and scrubbed."
  - "wit EXTRACT" failed if the disc title could not found in the title db.
  - New commands: "wit/wwt SKELETON": Create skeleton copies of discs for
-   further analysis. Details: http://wit.wiimm.de/cmd/wit/skeleton#desc
+   further analysis. Details: https://wit.wiimm.de/cmd/wit/skeleton#desc
 
 wit v1.27a r2289 - 2011-02-09
 

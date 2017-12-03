@@ -8,6 +8,6 @@
 		*         \/  \/     |_|    |_|         *
 		*                                       *
 		*           Wiimms ISO Tools            *
-		*         http://wit.wiimm.de/          *
+		*         https://wit.wiimm.de/          *
 		*                                       *
 		*****************************************

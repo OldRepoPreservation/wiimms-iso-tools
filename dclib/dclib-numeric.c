@@ -40,6 +40,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <sys/time.h>
+#include <fcntl.h>
 
 #include "dclib-basics.h"
 #include "dclib-debug.h"
@@ -1082,6 +1083,13 @@ ccp EncodeU64
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
+// Default tables for DecodeBase64() and EncodeBase64(), if no table is defined.
+
+ccp TableDecode64default = TableDecode64;
+ccp TableEncode64default = TableEncode64;
+
+///////////////////////////////////////////////////////////////////////////////
+
 uint DecodeBase64
 (
     // returns the number of valid bytes in 'buf'
@@ -1090,7 +1098,7 @@ uint DecodeBase64
     uint	buf_size,		// size of 'buf', >= 3
     ccp		source,			// NULL or string to decode
     int		len,			// length of string. if -1, str is null terminated
-    const char	decode64[256],		// decoding table; if NULL: use TableDecode64
+    const char	decode64[256],		// decoding table; if NULL: use TableDecode64default
     bool	allow_white_spaces,	// true: skip white spaces
     uint	*scanned_len		// not NULL: Store number of scanned 'str' bytes here
 )
@@ -1106,7 +1114,7 @@ uint DecodeBase64
     int ch1, ch2;
 
     if (!decode64)
-	decode64 = TableDecode64;
+	decode64 = TableDecode64default;
 
     while ( dest < dest_end && src < end )
     {
@@ -1181,7 +1189,7 @@ uint EncodeBase64
     uint	buf_size,		// size of 'buf', >= 4
     const void	*source,		// NULL or data to encode
     int		source_len,		// length of 'source'; if <0: use strlen(source)
-    const char	encode64[64+1],		// encoding table; if NULL: use TableEncode64
+    const char	encode64[64+1],		// encoding table; if NULL: use TableEncode64default
     bool	use_filler,		// use filler for aligned output
     ccp		next_line,		// not NULL: use this string as new line sep
     uint	next_line_trigger	// >0: use 'next_line' every # input bytes
@@ -1209,7 +1217,7 @@ uint EncodeBase64
     const u8 *src_end = src + ( source_len < 0 ? strlen(source) : source_len );
 
     if (!encode64)
-	encode64 = TableEncode64;
+	encode64 = TableEncode64default;
 
     uint n_tupel = 0;
 
@@ -1366,8 +1374,13 @@ uint DecodeByMode
 	len = DecodeBase64(buf,buf_size,source,slen,TableDecode64,true,0);
 	break;
 
-      case ENCODE_BASE64X:
-	len = DecodeBase64(buf,buf_size,source,slen,TableDecode64x,true,0);
+      case ENCODE_BASE64URL:
+      case ENCODE_BASE64STAR:
+	len = DecodeBase64(buf,buf_size,source,slen,TableDecode64url,true,0);
+	break;
+
+      case ENCODE_BASE64XML:
+	len = DecodeBase64(buf,buf_size,source,slen,TableDecode64xml,true,0);
 	break;
 
       case ENCODE_JSON:
@@ -1420,7 +1433,9 @@ mem_t DecodeByModeMem
 	break;
 
       case ENCODE_BASE64:
-      case ENCODE_BASE64X:
+      case ENCODE_BASE64URL:
+      case ENCODE_BASE64STAR:
+      case ENCODE_BASE64XML:
 	need = ( 3*slen ) / 4 + 12;
 	break;
 
@@ -1481,8 +1496,18 @@ uint EncodeByMode
 	len = EncodeBase64FillLen(len);
 	break;
 
-      case ENCODE_BASE64X:
-	len = EncodeBase64(buf,buf_size,source,slen,TableEncode64x,true,0,0);
+      case ENCODE_BASE64URL:
+	len = EncodeBase64(buf,buf_size,source,slen,TableEncode64url,true,0,0);
+	len = EncodeBase64FillLen(len);
+	break;
+
+      case ENCODE_BASE64STAR:
+	len = EncodeBase64(buf,buf_size,source,slen,TableEncode64star,true,0,0);
+	len = EncodeBase64FillLen(len);
+	break;
+
+      case ENCODE_BASE64XML:
+	len = EncodeBase64(buf,buf_size,source,slen,TableEncode64xml,true,0,0);
 	len = EncodeBase64FillLen(len);
 	break;
 
@@ -1536,7 +1561,9 @@ mem_t EncodeByModeMem
 	break;
 
       case ENCODE_BASE64:
-      case ENCODE_BASE64X:
+      case ENCODE_BASE64URL:
+      case ENCODE_BASE64STAR:
+      case ENCODE_BASE64XML:
 	need = ( 4*slen ) / 3 + 10;
 	break;
 
@@ -2396,6 +2423,55 @@ char * ScanDateTime64
 
 //
 ///////////////////////////////////////////////////////////////////////////////
+///////////////			urandom support			///////////////
+///////////////////////////////////////////////////////////////////////////////
+
+int urandom_available = 0; // <0:not, =0:not tested, >0:ok
+bool use_urandom_for_myrandom = true;
+
+uint ReadFromUrandom ( void *dest, uint size )
+{
+    static int fd = -1;
+
+    if ( fd == -1 )
+    {
+	if ( urandom_available < 0 )
+	    return 0;
+     #ifdef O_CLOEXEC
+	fd = open("/dev/urandom",O_CLOEXEC|O_NONBLOCK);
+     #else
+	fd = open("/dev/urandom",O_NONBLOCK);
+     #endif
+	if ( fd == -1 )
+	{
+	    urandom_available = -1;
+	    return 0;
+	}
+     #ifndef O_CLOEXEC
+	fcntl(fd,F_SETFD,FD_CLOEXEC);
+     #endif
+	urandom_available = 1;
+    }
+
+    u8 *buf = dest;
+    while ( size > 0 )
+    {
+	ssize_t stat = read(fd,buf,size);
+	if ( stat < 0 )
+	{
+	    urandom_available = -1;
+	    close(fd);
+	    return 0;
+	}
+	buf  += stat;
+	size -= stat;
+    }
+
+    return buf - (u8*)dest;
+}
+
+//
+///////////////////////////////////////////////////////////////////////////////
 ///////////////			random numbers			///////////////
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -2424,6 +2500,20 @@ static u32 random32_a_tab[] = // Init-Tabelle
 
 u32 MyRandom ( u32 max )
 {
+    if (use_urandom_for_myrandom)
+    {
+	u32 res32;
+	if (ReadFromUrandom(&res32,sizeof(res32)))
+	{
+	    if (!max)
+		return res32;
+
+	    u64 res64 = (u64)max * res32;
+	    return res64 >> 32;
+	}
+	use_urandom_for_myrandom = false;
+    }
+
     if (!--random32_count)
     {
 	// Neue Berechnung von random32_a und random32_c fällig
@@ -2513,6 +2603,65 @@ void MyRandomFill ( void * buf, size_t size )
     u8 * ptr = buf;
     while ( size-- > 0 )
 	*ptr++ = MyRandom(0);
+}
+
+//
+///////////////////////////////////////////////////////////////////////////////
+///////////////			UUID				///////////////
+///////////////////////////////////////////////////////////////////////////////
+
+void CreateUUID ( uuid_buf_t dest )
+{
+    DASSERT(dest);
+    const uint stat = ReadFromUrandom(dest,sizeof(uuid_buf_t));
+    if (!stat)
+	MyRandomFill(dest,sizeof(uuid_buf_t));
+
+    dest[6] = dest[6] & 0x0f | 0x40;
+    dest[8] = dest[8] & 0x3f | 0x80;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+uint CreateTextUUID ( char *buf, uint bufsize )
+{
+    uuid_buf_t uuid;
+    CreateUUID(uuid);
+    return PrintUUID(buf,bufsize,uuid);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+uint PrintUUID ( char *buf, uint bufsize, uuid_buf_t uuid )
+{
+    return snprintf(buf,bufsize,
+	"%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
+	uuid[0],uuid[1],uuid[2],uuid[3],
+	uuid[4],uuid[5], uuid[6],uuid[7],  uuid[8],uuid[9],
+	uuid[10],uuid[11],uuid[12],uuid[13],uuid[14],uuid[15] );
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+char * ScanUUID ( uuid_buf_t uuid, ccp source )
+{
+    memset(uuid,0,sizeof(uuid_buf_t));
+
+    uint i;
+    ccp src = source;
+    for ( i = 0; i < sizeof(uuid_buf_t); i++ )
+    {
+	if ( *src == '-' )
+	    src++;
+
+	uint num;
+	ccp end = ScanNumber(&num,src,0,16,2);
+	if ( end != src+2 )
+	    return (char*)source;
+	uuid[i] = num;
+	src = end;
+    }
+    return (char*)src;
 }
 
 //

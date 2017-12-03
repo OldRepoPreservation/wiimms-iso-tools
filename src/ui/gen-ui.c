@@ -9,12 +9,12 @@
  *                         \/  \/     |_|    |_|                           *
  *                                                                         *
  *                           Wiimms ISO Tools                              *
- *                         http://wit.wiimm.de/                            *
+ *                         https://wit.wiimm.de/                           *
  *                                                                         *
  ***************************************************************************
  *                                                                         *
  *   This file is part of the WIT project.                                 *
- *   Visit http://wit.wiimm.de/ for project details and sources.           *
+ *   Visit https://wit.wiimm.de/ for project details and sources.          *
  *                                                                         *
  *   Copyright (c) 2009-2017 by Dirk Clemens <wiimm@wiimm.de>              *
  *                                                                         *
@@ -88,7 +88,7 @@
 	" Rules beginning with a '+' or a '-' are allow or deny rules rules." \
 	" Rules beginning with a ':' are macros for predefined rule sets." \
 	"\1\n " \
-	" See http://wit.wiimm.de/info/file-filter.html" \
+	" See https://wit.wiimm.de/info/file-filter.html" \
 	" for more details about file filters."
 
 ///////////////////////////////////////////////////////////////////////////////

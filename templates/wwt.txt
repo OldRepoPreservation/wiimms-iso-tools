@@ -1062,7 +1062,7 @@ There are some hidden options implemented for testing:
 The user can define environment variables as additional way to submit options
 to the tool. All options are accepted and used as default. 
 
-See http://wit.wiimm.de/info/environ.html for details.
+See https://wit.wiimm.de/info/environ.html for details.
 
 
 @@MODULE(signals.txt)@@

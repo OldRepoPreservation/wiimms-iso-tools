@@ -855,6 +855,33 @@ int PrintDirectTCPStream
 )
 __attribute__ ((__format__(__printf__,3,4)));
 
+//-----------------------------------------------------------------------------
+
+int PrintBinary1TCPStream
+(
+    TCPStream_t	*ts,		// NULL or destination
+    ccp		cmd,		// command name
+    cvp		bin_data,	// pointer to binary data
+    uint	bin_size,	// size of binary data
+    ccp		format,		// NULL or format string with final ';'
+    ...				// parameters for 'format'
+)
+__attribute__ ((__format__(__printf__,5,6)));
+
+int PrintBinary2TCPStream
+(
+    TCPStream_t	*ts,		// NULL or destination
+    ccp		cmd,		// command name
+    cvp		bin1_data,	// pointer to binary data
+    uint	bin1_size,	// size of binary data
+    cvp		bin2_data,	// pointer to binary data
+    uint	bin2_size,	// size of binary data
+    ccp		format,		// NULL or format string with final ';'
+    ...				// parameters for 'format'
+)
+__attribute__ ((__format__(__printf__,7,8)));
+
+//-----------------------------------------------------------------------------
 
 static inline int FlushTCPStream
 (
@@ -905,8 +932,8 @@ void CheckSocketTCPStream
 
 void CheckTimeoutTCPStream ( TCPStream_t *ts );
 u64  GetLastActivityTCPStream ( TCPStream_t *ts );
-u64 GetTimeoutTCPStream ( TCPStream_t *ts );
-int OnTimeoutTCPStream ( TCPStream_t *ts, u64 now_usec );
+u64  GetTimeoutTCPStream ( TCPStream_t *ts );
+int  OnTimeoutTCPStream ( TCPStream_t *ts, u64 now_usec );
 void SetupTriggerTCPStream ( TCPStream_t *ts, u64 now_usec );
 
 //

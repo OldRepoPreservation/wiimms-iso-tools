@@ -9,12 +9,12 @@
  *                         \/  \/     |_|    |_|                           *
  *                                                                         *
  *                           Wiimms ISO Tools                              *
- *                         http://wit.wiimm.de/                            *
+ *                         https://wit.wiimm.de/                           *
  *                                                                         *
  ***************************************************************************
  *                                                                         *
  *   This file is part of the WIT project.                                 *
- *   Visit http://wit.wiimm.de/ for project details and sources.           *
+ *   Visit https://wit.wiimm.de/ for project details and sources.          *
  *                                                                         *
  *   Copyright (c) 2009-2017 by Dirk Clemens <wiimm@wiimm.de>              *
  *                                                                         *
@@ -74,8 +74,9 @@
     #define NO_PREALLOC 1
 #endif
 
+// SUPPORT_DIRECT is not completed, so disable the support!
 #ifdef TEST
- #define SUPPORT_DIRECT 2	// 0=off, 1:on, 2=on+logs
+ #define SUPPORT_DIRECT 0	// 0=off, 1:on, 2=on+logs
 #else
  #define SUPPORT_DIRECT 0
 #endif
@@ -128,10 +129,6 @@ typedef enum enumRevID
 #define M1(a) ( (typeof(a))~0 )
 #define IS_M1(a) ( (a) == (typeof(a))~0 )
 
-///////////////////////////////////////////////////////////////////////////////
-
-typedef char id6_t[7];
-
 //
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////                       Setup                     ///////////////
@@ -140,8 +137,6 @@ typedef char id6_t[7];
 void SetupLib ( int argc, char ** argv, ccp p_progname, enumProgID prid );
 void SetupColors();
 void CloseAll();
-
-typedef enumError (*check_opt_func) ( int argc, char ** argv, bool mode );
 
 //
 ///////////////////////////////////////////////////////////////////////////////
@@ -244,6 +239,7 @@ off_t GetBlockDevSize ( int fd );
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////			Open File Mode			///////////////
 ///////////////////////////////////////////////////////////////////////////////
+// [[enumIOMode]]
 
 typedef enum enumIOMode
 {
@@ -259,6 +255,7 @@ typedef enum enumIOMode
 
 } enumIOMode;
 
+extern int opt_dsync;
 extern int opt_direct;
 extern enumIOMode opt_iomode;
 void ScanIOMode ( ccp arg );

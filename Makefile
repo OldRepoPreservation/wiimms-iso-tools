@@ -9,12 +9,12 @@
 ##                      \/  \/     |_|    |_|                      ##
 ##                                                                 ##
 ##                        Wiimms ISO Tools                         ##
-##                      http://wit.wiimm.de/                       ##
+##                      https://wit.wiimm.de/                       ##
 ##                                                                 ##
 #####################################################################
 ##                                                                 ##
 ##   This file is part of the WIT project.                         ##
-##   Visit http://wit.wiimm.de/ for project details and sources.   ##
+##   Visit https://wit.wiimm.de/ for project details and sources.   ##
 ##                                                                 ##
 ##   Copyright (c) 2009-2017 by Dirk Clemens <wiimm@wiimm.de>      ##
 ##                                                                 ##
@@ -45,29 +45,29 @@ WDF_LONG		= Wiimms WDF Tool
 WFUSE_SHORT		= wfuse
 WFUSE_LONG		= Wiimms FUSE Tool
 
-VERSION_NUM		= 3.00a
+VERSION_NUM		= 3.01a
 BETA_VERSION		= 0
 			# 0:off  -1:"beta"  >0:"beta#"
 
-URI_HOME		= http://wit.wiimm.de/
-URI_DOWNLOAD		= http://wit.wiimm.de/download
-URI_FILE		= http://wit.wiimm.de/file
+URI_HOME		= https://wit.wiimm.de/
+URI_DOWNLOAD		= https://wit.wiimm.de/download
+URI_FILE		= https://wit.wiimm.de/file
 
 ifeq ($(BETA_VERSION),0)
   URI_REPOS		= http://opensvn.wiimm.de/wii/trunk/wiimms-iso-tools/
-  URI_VIEWVC		= http://wit.wiimm.de/r/viewvc
+  URI_VIEWVC		= https://wit.wiimm.de/r/viewvc
 else
   URI_REPOS		= http://opensvn.wiimm.de/wii/branches/public/wiimms-iso-tools/
-  URI_VIEWVC		= http://wit.wiimm.de/r/viewvc-beta
+  URI_VIEWVC		= https://wit.wiimm.de/r/viewvc-beta
 endif
 
-URI_WDF			= http://wit.wiimm.de/r/wdf
-URI_CISO		= http://wit.wiimm.de/r/ciso
-URI_QTWITGUI		= http://wit.wiimm.de/r/qtwitgui
-URI_WIIBAFU		= http://wit.wiimm.de/r/wiibafu
-#URI_WCDWM		= http://wit.wiimm.de/r/wcdwm
-#URI_WIIJMANAGER	= http://wit.wiimm.de/r/wiijman
-URI_MACWITGUI		= http://wit.wiimm.de/r/mac-witgui
+URI_WDF			= https://wit.wiimm.de/r/wdf
+URI_CISO		= https://wit.wiimm.de/r/ciso
+URI_QTWITGUI		= https://wit.wiimm.de/r/qtwitgui
+URI_WIIBAFU		= https://wit.wiimm.de/r/wiibafu
+#URI_WCDWM		= https://wit.wiimm.de/r/wcdwm
+#URI_WIIJMANAGER	= https://wit.wiimm.de/r/wiijman
+URI_MACWITGUI		= https://wit.wiimm.de/r/mac-witgui
 URI_GBATEMP		= http://gbatemp.net/index.php?showtopic=182236\#entry2286365
 URI_DOWNLOAD_I386	= $(URI_DOWNLOAD)/$(DISTRIB_I386)
 URI_DOWNLOAD_X86_64	= $(URI_DOWNLOAD)/$(DISTRIB_X86_64)
@@ -75,8 +75,8 @@ URI_DOWNLOAD_MAC	= $(URI_DOWNLOAD)/$(DISTRIB_MAC)
 URI_DOWNLOAD_CYGWIN	= $(URI_DOWNLOAD)/$(DISTRIB_CYGWIN)
 URI_TITLES		= http://gametdb.com/titles.txt
 
-DOWNLOAD_DIR		= /cygdrive/n/www/wit.wiimm.de/download
-
+DOWNLOAD_DIR		= /n/www/wit.wiimm.de/download
+EXPORT_DIR		= /cygdrive/n/wit/wiimms-iso-tools/bin
 
 DUMMY			:= $(shell $(SHELL) ./setup.sh)
 include Makefile.setup
@@ -197,6 +197,9 @@ LZMA_OBJ	= $(patsubst %.c,%.o,$(LZMA_SRC))
 ifeq ($(SYSTEM),cygwin)
   LZMA_FLAGS	= -Wno-unused-but-set-variable
   BZIP2_FLAGS	= -Wno-maybe-uninitialized
+else ifeq ($(SYSTEM),mac)
+  LZMA_FLAGS	= 
+  BZIP2_FLAGS	= 
 else
   LZMA_FLAGS	= -Wno-unused-but-set-variable
   BZIP2_FLAGS	= -Wno-maybe-uninitialized
