@@ -9,12 +9,12 @@
  *                         \/  \/     |_|    |_|                           *
  *                                                                         *
  *                           Wiimms ISO Tools                              *
- *                         http://wit.wiimm.de/                            *
+ *                         https://wit.wiimm.de/                           *
  *                                                                         *
  ***************************************************************************
  *                                                                         *
  *   This file is part of the WIT project.                                 *
- *   Visit http://wit.wiimm.de/ for project details and sources.           *
+ *   Visit https://wit.wiimm.de/ for project details and sources.          *
  *                                                                         *
  *   Copyright (c) 2009-2012 by Dirk Clemens <wiimm@wiimm.de>              *
  *                                                                         *
@@ -278,7 +278,7 @@
 		"Create very small skeletons of ISO images."
 		" A skeleton contains only disc and partition headers for further"
 		" analysis and is not playable because all files are zeroed."
-		"\1 Read http://wit.wiimm.de/cmd/wwt/skel for more details." },
+		"\1 Read https://wit.wiimm.de/cmd/wwt/skel for more details." },
 
   { T_SEP_CMD,	0,0,0,0 }, //----- separator -----
 
@@ -332,6 +332,9 @@
 		0, 0 /* copy of wit */ },
 
   { T_OPT_GP,	"IO",		"io",
+		0, 0 /* copy of wit */ },
+
+  { T_OPT_G,	"DSYNC",	"dsync",
 		0, 0 /* copy of wit */ },
 
   { H_OPT_G,	"DIRECT",	"direct",

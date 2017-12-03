@@ -9,12 +9,12 @@
  *                         \/  \/     |_|    |_|                           *
  *                                                                         *
  *                           Wiimms ISO Tools                              *
- *                         http://wit.wiimm.de/                            *
+ *                         https://wit.wiimm.de/                           *
  *                                                                         *
  ***************************************************************************
  *                                                                         *
  *   This file is part of the WIT project.                                 *
- *   Visit http://wit.wiimm.de/ for project details and sources.           *
+ *   Visit https://wit.wiimm.de/ for project details and sources.          *
  *                                                                         *
  *   Copyright (c) 2009-2012 by Dirk Clemens <wiimm@wiimm.de>              *
  *                                                                         *
@@ -133,7 +133,7 @@
 		" 'XML=filname' or 'NEW=type,addr,size'"
 		" or 'NEW=type,AUTO ' or 'LOAD=addr,filename' or 'addr=patch[#cond]',"
 		" and 'type' is either 'TEXT' or 'DATA'."
-		"\1 Read http://wit.wiimm.de/cmd/wit/dolpatch for more details." },
+		"\1 Read https://wit.wiimm.de/cmd/wit/dolpatch for more details." },
 
   { H_DEF_CMD,	"CODE",		"_CODE",
 		    "wit _CODE [files]",
@@ -307,7 +307,7 @@
 		"Create very small skeletons of ISO images."
 		" A skeleton contains only disc and partition headers for further"
 		" analysis and is not playable because all files are zeroed."
-		"\1 Read http://wit.wiimm.de/cmd/wit/skel for more details." },
+		"\1 Read https://wit.wiimm.de/cmd/wit/skel for more details." },
 
   { T_DEF_CMD,	"MIX",		"MIX",
 		    "wit MIX SOURCE... --dest|--DEST outfile\n"
@@ -317,7 +317,7 @@
 		    "                  | 'ignore' ruleset\n"
 		    "                  | 'header'\n"
 		    "                  | 'region'\1\n"
-		    "Read http://wit.wiimm.de/cmd/wit/mix for more details.",
+		    "Read https://wit.wiimm.de/cmd/wit/mix for more details.",
 		"Mix the partitions from different sources into one new"
 		" Wii or GameCube disc." },
 
@@ -416,6 +416,16 @@
 
   { T_OPT_G,	"FORCE",	"f|force",
 		0, "Force operation." },
+
+  { T_OPT_G,	"DSYNC",	"dsync",
+		0,
+		"The option enables the usage of flag O_DSYNC"
+		" when opening a partition at a hard drive."
+		" With activated flag, writing an image is some percent slower,"
+		" but the progress counters are exact again."
+		"\n "
+		" It has only impact, if the compiler and the operation system"
+		" support the flag O_DSYNC. Linux does." },
 
   { H_OPT_G,	"DIRECT",	"direct",
 		0,
@@ -580,7 +590,7 @@
 		"Add a certificate selection rule."
 		" All certificates that matches the rule set will be fake signed."
 		"\1\n "
-		" See http://wit.wiimm.de/info/file-filter.html"
+		" See https://wit.wiimm.de/info/file-filter.html"
 		" for more details about filters." },
 
   { T_OPT_CM,	"IGNORE",	"i|ignore",
@@ -631,7 +641,7 @@
 		" @ptype@, @#index@, @#<index@, @#<=index@, @#>index@, @#>=index@"
 		" and @#tab_index.part_index@."
 		"\1\n "
-		" See http://wit.wiimm.de/opt/psel for more details." },
+		" See https://wit.wiimm.de/opt/psel for more details." },
 
   { T_OPT_C,	"RAW",		"raw",
 		0, "Abbreviation of {--psel RAW}." },
@@ -642,7 +652,7 @@
 		" One of the following values is allowed:"
 		" @AUTO, NONE, POINT, ID, NAME, INDEX, COMBI@."
 		" The default value is @'AUTO'@."
-		"\1 See http://wit.wiimm.de/opt/pmode for more details." },
+		"\1 See https://wit.wiimm.de/opt/pmode for more details." },
 
   { T_OPT_C,	"FLAT",		"flat",
 		0,
@@ -707,7 +717,7 @@
 		" The disc header, boot.bin, ticket.bin and tmd.bin are"
 		" objects to modify. The option {--modify} selects the objects."
 		"\1\n"
-		"See http://wit.wiimm.de/opt/id for more details." },
+		"See https://wit.wiimm.de/opt/id for more details." },
 
   { T_OPT_CP,	"DISC_ID",	"disc-id|discid",
 		"id",
@@ -718,7 +728,7 @@
 		" to fill the complete entered ID to 6 characters."
 		" Option --disc-id overrides the definition of option {--id}."
 		"\1\n"
-		"See http://wit.wiimm.de/opt/disc-id for more details." },
+		"See https://wit.wiimm.de/opt/disc-id for more details." },
 
   { T_OPT_CP,	"BOOT_ID",	"boot-id|bootid",
 		"id",
@@ -729,7 +739,7 @@
 		" to fill the complete entered ID to 6 characters."
 		" Option --boot-id overrides the definition of option {--id}."
 		"\1\n"
-		"See http://wit.wiimm.de/opt/boot-id for more details." },
+		"See https://wit.wiimm.de/opt/boot-id for more details." },
 
   { T_OPT_CP,	"TICKET_ID",	"ticket-id|ticketid",
 		"id",
@@ -740,7 +750,7 @@
 		" to fill the complete entered ID to 4 characters."
 		" Option --ticket-id overrides the definition of option {--id}."
 		"\1\n"
-		"See http://wit.wiimm.de/opt/ticket-id for more details." },
+		"See https://wit.wiimm.de/opt/ticket-id for more details." },
 
   { T_OPT_CP,	"TMD_ID",	"tmd-id|tmdid",
 		"id",
@@ -751,7 +761,7 @@
 		" to fill the complete entered ID to 4 characters."
 		" Option --tmd-id overrides the definition of option {--id}."
 		"\1\n"
-		"See http://wit.wiimm.de/opt/tmd-id for more details." },
+		"See https://wit.wiimm.de/opt/tmd-id for more details." },
 
   { T_OPT_CP,	"TT_ID",	"tt-id|ttid",
 		"id",
@@ -770,7 +780,7 @@
 		" to fill the complete entered ID to 6 characters."
 		" Option --wbfs-id overrides the definition of option {--id}."
 		"\1\n"
-		"See http://wit.wiimm.de/opt/wbfs-id for more details." },
+		"See https://wit.wiimm.de/opt/wbfs-id for more details." },
 
   { T_OPT_CP,	"REGION",	"region",
 		"region",
@@ -821,7 +831,7 @@
 		" The processing order of file options is:"
 		" {--rm-files --zero-files --ignore-files}."
 		"\1\n "
-		" See http://wit.wiimm.de/info/file-filter.html"
+		" See https://wit.wiimm.de/info/file-filter.html"
 		" for more details about file filters." },
 
   { T_OPT_CP,	"ZERO_FILES",	"zero-files|zero-file|zerofiles|zerofile",
@@ -832,7 +842,7 @@
 		" The processing order of file options is:"
 		" {--rm-files --zero-files --ignore-files}."
 		"\1\n "
-		" See http://wit.wiimm.de/info/file-filter.html"
+		" See https://wit.wiimm.de/info/file-filter.html"
 		" for more details about file filters." },
 
   { T_OPT_C,	"OVERLAY",	"overlay",
@@ -870,7 +880,7 @@
 		" The processing order of file options is:"
 		" {--rm-files --zero-files --ignore-files}."
 		"\1\n "
-		" See http://wit.wiimm.de/info/file-filter.html"
+		" See https://wit.wiimm.de/info/file-filter.html"
 		" for more details about file filters." },
 
   { H_OPT_CP,	"TRIM",		"trim",
@@ -1267,7 +1277,7 @@
   { T_OPT_C,	"SECTIONS",	"sections",
 		0,
 		"Print in machine readable sections and parameter lines."
-		"\1 Read http://wit.wiimm.de/opt/sections for more details." },
+		"\1 Read https://wit.wiimm.de/opt/sections for more details." },
 
   { T_OPT_CP,	"SORT",		"S|sort",
 		"list",
@@ -1582,7 +1592,7 @@
 	"Filter the certificates by rules."
 	" Therefor the certificate name is build in the form 'issuer.keyid'."
 	"\1\n "
-	" See http://wit.wiimm.de/info/file-filter.html"
+	" See https://wit.wiimm.de/info/file-filter.html"
 	" for more details about filters." },
   { T_COPT_M,	"FAKE_SIGN",	0,0,0 },
   { T_COPT,	"DEST",		0,0,

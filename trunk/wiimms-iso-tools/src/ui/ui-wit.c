@@ -9,12 +9,12 @@
  *                         \/  \/     |_|    |_|                           *
  *                                                                         *
  *                           Wiimms ISO Tools                              *
- *                         http://wit.wiimm.de/                            *
+ *                         https://wit.wiimm.de/                           *
  *                                                                         *
  ***************************************************************************
  *                                                                         *
  *   This file is part of the WIT project.                                 *
- *   Visit http://wit.wiimm.de/ for project details and sources.           *
+ *   Visit https://wit.wiimm.de/ for project details and sources.          *
  *                                                                         *
  *   Copyright (c) 2009-2017 by Dirk Clemens <wiimm@wiimm.de>              *
  *                                                                         *
@@ -162,7 +162,7 @@ static const InfoOption_t OptionInfo[OPT__N_TOTAL+1] =
 	"ruleset",
 	"Add a certificate selection rule. All certificates that matches the"
 	" rule set will be fake signed.\n"
-	"  See http://wit.wiimm.de/info/file-filter.html for more details"
+	"  See https://wit.wiimm.de/info/file-filter.html for more details"
 	" about filters."
     },
 
@@ -212,7 +212,7 @@ static const InfoOption_t OptionInfo[OPT__N_TOTAL+1] =
 	" ID, ALL, WHOLE and RAW. The following input formats are accepted"
 	" too: ptype, #index, #<index, #<=index, #>index, #>=index and"
 	" #tab_index.part_index.\n"
-	"  See http://wit.wiimm.de/opt/psel for more details."
+	"  See https://wit.wiimm.de/opt/psel for more details."
     },
 
     {	OPT_RAW, false, false, false, false, 0, "raw",
@@ -225,7 +225,7 @@ static const InfoOption_t OptionInfo[OPT__N_TOTAL+1] =
 	"This options set the prefix mode for listed or extracted files. One"
 	" of the following values is allowed: AUTO, NONE, POINT, ID, NAME,"
 	" INDEX, COMBI. The default value is 'AUTO'. See"
-	" http://wit.wiimm.de/opt/pmode for more details."
+	" https://wit.wiimm.de/opt/pmode for more details."
     },
 
     {	OPT_FLAT, false, false, false, false, 0, "flat",
@@ -289,7 +289,7 @@ static const InfoOption_t OptionInfo[OPT__N_TOTAL+1] =
 	" multiple '.' to fill the complete entered ID to 6 characters. The"
 	" disc header, boot.bin, ticket.bin and tmd.bin are objects to modify."
 	" The option --modify selects the objects.\n"
-	"See http://wit.wiimm.de/opt/id for more details."
+	"See https://wit.wiimm.de/opt/id for more details."
     },
 
     {	OPT_DISC_ID, false, false, false, false, 0, "disc-id",
@@ -299,7 +299,7 @@ static const InfoOption_t OptionInfo[OPT__N_TOTAL+1] =
 	" not equal '.' are modified. The plus sign '+' is a wildcard for"
 	" multiple '.' to fill the complete entered ID to 6 characters. Option"
 	" --disc-id overrides the definition of option --id.\n"
-	"See http://wit.wiimm.de/opt/disc-id for more details."
+	"See https://wit.wiimm.de/opt/disc-id for more details."
     },
 
     {	OPT_BOOT_ID, false, false, false, false, 0, "boot-id",
@@ -309,7 +309,7 @@ static const InfoOption_t OptionInfo[OPT__N_TOTAL+1] =
 	" not equal '.' are modified. The plus sign '+' is a wildcard for"
 	" multiple '.' to fill the complete entered ID to 6 characters. Option"
 	" --boot-id overrides the definition of option --id.\n"
-	"See http://wit.wiimm.de/opt/boot-id for more details."
+	"See https://wit.wiimm.de/opt/boot-id for more details."
     },
 
     {	OPT_TICKET_ID, false, false, false, false, 0, "ticket-id",
@@ -319,7 +319,7 @@ static const InfoOption_t OptionInfo[OPT__N_TOTAL+1] =
 	" not equal '.' are modified. The plus sign '+' is a wildcard for"
 	" multiple '.' to fill the complete entered ID to 4 characters. Option"
 	" --ticket-id overrides the definition of option --id.\n"
-	"See http://wit.wiimm.de/opt/ticket-id for more details."
+	"See https://wit.wiimm.de/opt/ticket-id for more details."
     },
 
     {	OPT_TMD_ID, false, false, false, false, 0, "tmd-id",
@@ -329,7 +329,7 @@ static const InfoOption_t OptionInfo[OPT__N_TOTAL+1] =
 	" not equal '.' are modified. The plus sign '+' is a wildcard for"
 	" multiple '.' to fill the complete entered ID to 4 characters. Option"
 	" --tmd-id overrides the definition of option --id.\n"
-	"See http://wit.wiimm.de/opt/tmd-id for more details."
+	"See https://wit.wiimm.de/opt/tmd-id for more details."
     },
 
     {	OPT_TT_ID, false, false, false, false, 0, "tt-id",
@@ -348,7 +348,7 @@ static const InfoOption_t OptionInfo[OPT__N_TOTAL+1] =
 	" modified. The plus sign '+' is a wildcard for multiple '.' to fill"
 	" the complete entered ID to 6 characters. Option --wbfs-id overrides"
 	" the definition of option --id.\n"
-	"See http://wit.wiimm.de/opt/wbfs-id for more details."
+	"See https://wit.wiimm.de/opt/wbfs-id for more details."
     },
 
     {	OPT_REGION, false, false, false, false, 0, "region",
@@ -403,7 +403,7 @@ static const InfoOption_t OptionInfo[OPT__N_TOTAL+1] =
 	" directories from the FST of the DATA partition. Fake signing of the"
 	" TMD is necessary. The processing order of file options is:"
 	" '--rm-files --zero-files --ignore-files'.\n"
-	"  See http://wit.wiimm.de/info/file-filter.html for more details"
+	"  See https://wit.wiimm.de/info/file-filter.html for more details"
 	" about file filters."
     },
 
@@ -413,7 +413,7 @@ static const InfoOption_t OptionInfo[OPT__N_TOTAL+1] =
 	" real files of the FST of the DATA partition. Fake signing of the TMD"
 	" is necessary. The processing order of file options is: '--rm-files"
 	" --zero-files --ignore-files'.\n"
-	"  See http://wit.wiimm.de/info/file-filter.html for more details"
+	"  See https://wit.wiimm.de/info/file-filter.html for more details"
 	" about file filters."
     },
 
@@ -449,7 +449,7 @@ static const InfoOption_t OptionInfo[OPT__N_TOTAL+1] =
 	" such file is accessed the Wii will halt immediately, because the"
 	" verification of the checksum calculation fails. The processing order"
 	" of file options is: '--rm-files --zero-files --ignore-files'.\n"
-	"  See http://wit.wiimm.de/info/file-filter.html for more details"
+	"  See https://wit.wiimm.de/info/file-filter.html for more details"
 	" about file filters."
     },
 
@@ -714,7 +714,7 @@ static const InfoOption_t OptionInfo[OPT__N_TOTAL+1] =
 	" extend the rule list. Rules beginning with a '+' or a '-' are allow"
 	" or deny rules rules. Rules beginning with a ':' are macros for"
 	" predefined rule sets.\n"
-	"  See http://wit.wiimm.de/info/file-filter.html for more details"
+	"  See https://wit.wiimm.de/info/file-filter.html for more details"
 	" about file filters."
     },
 
@@ -833,7 +833,7 @@ static const InfoOption_t OptionInfo[OPT__N_TOTAL+1] =
     {	OPT_SECTIONS, false, false, false, false, 0, "sections",
 	0,
 	"Print in machine readable sections and parameter lines. Read"
-	" http://wit.wiimm.de/opt/sections for more details."
+	" https://wit.wiimm.de/opt/sections for more details."
     },
 
     {	OPT_SORT, false, false, false, false, 'S', "sort",
@@ -963,6 +963,15 @@ static const InfoOption_t OptionInfo[OPT__N_TOTAL+1] =
 	"Force operation."
     },
 
+    {	OPT_DSYNC, false, false, false, false, 0, "dsync",
+	0,
+	"The option enables the usage of flag O_DSYNC when opening a partition"
+	" at a hard drive. With activated flag, writing an image is some"
+	" percent slower, but the progress counters are exact again.\n"
+	"  It has only impact, if the compiler and the operation system"
+	" support the flag O_DSYNC. Linux does."
+    },
+
     {	OPT_DIRECT, true, false, false, false, 0, "direct",
 	0,
 	"This option allows the tools to use direct file io for some file"
@@ -1049,7 +1058,7 @@ static const InfoOption_t OptionInfo[OPT__N_TOTAL+1] =
 	" caution!"
     },
 
-    {0,0,0,0,0,0,0,0} // OPT__N_TOTAL == 131
+    {0,0,0,0,0,0,0,0} // OPT__N_TOTAL == 132
 
 };
 
@@ -1117,7 +1126,7 @@ static const InfoOption_t option_cmd_CERT_FILES =
 	"ruleset",
 	"Filter the certificates by rules. Therefor the certificate name is"
 	" build in the form 'issuer.keyid'.\n"
-	"  See http://wit.wiimm.de/info/file-filter.html for more details"
+	"  See https://wit.wiimm.de/info/file-filter.html for more details"
 	" about filters."
     };
 
@@ -1289,7 +1298,7 @@ static const InfoOption_t option_cmd_DIFF_FILES =
 	" This option can be used multiple times to extend the rule list."
 	" Rules beginning with a '+' or a '-' are allow or deny rules rules."
 	" Rules beginning with a ':' are macros for predefined rule sets.\n"
-	"  See http://wit.wiimm.de/info/file-filter.html for more details"
+	"  See https://wit.wiimm.de/info/file-filter.html for more details"
 	" about file filters."
     };
 
@@ -1524,6 +1533,7 @@ static const struct option OptionLong[] =
 	 { "nocolors",		0, 0, GO_NO_COLOR },
 	{ "io",			1, 0, GO_IO },
 	{ "force",		0, 0, 'f' },
+	{ "dsync",		0, 0, GO_DSYNC },
 	{ "direct",		0, 0, GO_DIRECT },
 	{ "titles",		1, 0, 'T' },
 	{ "utf-8",		0, 0, GO_UTF_8 },
@@ -1712,7 +1722,7 @@ static const struct option OptionLong[] =
 
 static u8 OptionUsed[OPT__N_TOTAL+1] = {0};
 
-static const u8 OptionIndex[UIOPT_INDEX_SIZE] = 
+static const OptionIndex_t OptionIndex[UIOPT_INDEX_SIZE] = 
 {
 	/* 0x00   */	 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
 	/* 0x10   */	 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
@@ -1781,90 +1791,91 @@ static const u8 OptionIndex[UIOPT_INDEX_SIZE] =
 	/* 0x84   */	OPT_COLOR_256,
 	/* 0x85   */	OPT_NO_COLOR,
 	/* 0x86   */	OPT_IO,
-	/* 0x87   */	OPT_DIRECT,
-	/* 0x88   */	OPT_UTF_8,
-	/* 0x89   */	OPT_NO_UTF_8,
-	/* 0x8a   */	OPT_LANG,
-	/* 0x8b   */	OPT_CERT,
-	/* 0x8c   */	OPT_OLD,
-	/* 0x8d   */	OPT_NEW,
-	/* 0x8e   */	OPT_NO_EXPAND,
-	/* 0x8f   */	OPT_RDEPTH,
-	/* 0x90   */	OPT_INCLUDE_FIRST,
-	/* 0x91   */	OPT_JOB_LIMIT,
-	/* 0x92   */	OPT_FAKE_SIGN,
-	/* 0x93   */	OPT_IGNORE_FST,
-	/* 0x94   */	OPT_IGNORE_SETUP,
-	/* 0x95   */	OPT_LINKS,
-	/* 0x96   */	OPT_PSEL,
-	/* 0x97   */	OPT_RAW,
-	/* 0x98   */	OPT_PMODE,
-	/* 0x99   */	OPT_FLAT,
-	/* 0x9a   */	OPT_COPY_GC,
-	/* 0x9b   */	OPT_NO_LINK,
-	/* 0x9c   */	OPT_NEEK,
-	/* 0x9d   */	OPT_HOOK,
-	/* 0x9e   */	OPT_ENC,
-	/* 0x9f   */	OPT_MODIFY,
-	/* 0xa0   */	OPT_NAME,
-	/* 0xa1   */	OPT_ID,
-	/* 0xa2   */	OPT_DISC_ID,
-	/* 0xa3   */	OPT_BOOT_ID,
-	/* 0xa4   */	OPT_TICKET_ID,
-	/* 0xa5   */	OPT_TMD_ID,
-	/* 0xa6   */	OPT_TT_ID,
-	/* 0xa7   */	OPT_WBFS_ID,
-	/* 0xa8   */	OPT_REGION,
-	/* 0xa9   */	OPT_COMMON_KEY,
-	/* 0xaa   */	OPT_IOS,
-	/* 0xab   */	OPT_HTTP,
-	/* 0xac   */	OPT_DOMAIN,
-	/* 0xad   */	OPT_WIIMMFI,
-	/* 0xae   */	OPT_TWIIMMFI,
-	/* 0xaf   */	OPT_RM_FILES,
-	/* 0xb0   */	OPT_ZERO_FILES,
-	/* 0xb1   */	OPT_OVERLAY,
-	/* 0xb2   */	OPT_REPL_FILE,
-	/* 0xb3   */	OPT_ADD_FILE,
-	/* 0xb4   */	OPT_IGNORE_FILES,
-	/* 0xb5   */	OPT_TRIM,
-	/* 0xb6   */	OPT_ALIGN,
-	/* 0xb7   */	OPT_ALIGN_PART,
-	/* 0xb8   */	OPT_ALIGN_FILES,
-	/* 0xb9   */	OPT_AUTO_SPLIT,
-	/* 0xba   */	OPT_NO_SPLIT,
-	/* 0xbb   */	OPT_DISC_SIZE,
-	/* 0xbc   */	OPT_PREALLOC,
-	/* 0xbd   */	OPT_TRUNC,
-	/* 0xbe   */	OPT_CHUNK_MODE,
-	/* 0xbf   */	OPT_CHUNK_SIZE,
-	/* 0xc0   */	OPT_MAX_CHUNKS,
-	/* 0xc1   */	OPT_BLOCK_SIZE,
-	/* 0xc2   */	OPT_COMPRESSION,
-	/* 0xc3   */	OPT_MEM,
-	/* 0xc4   */	OPT_DIFF,
-	/* 0xc5   */	OPT_WDF1,
-	/* 0xc6   */	OPT_WDF2,
-	/* 0xc7   */	OPT_ALIGN_WDF,
-	/* 0xc8   */	OPT_WIA,
-	/* 0xc9   */	OPT_GCZ_ZIP,
-	/* 0xca   */	OPT_GCZ_BLOCK,
-	/* 0xcb   */	OPT_FST,
-	/* 0xcc   */	OPT_ITIME,
-	/* 0xcd   */	OPT_MTIME,
-	/* 0xce   */	OPT_CTIME,
-	/* 0xcf   */	OPT_ATIME,
-	/* 0xd0   */	OPT_TIME,
-	/* 0xd1   */	OPT_NUMERIC,
-	/* 0xd2   */	OPT_TECHNICAL,
-	/* 0xd3   */	OPT_REALPATH,
-	/* 0xd4   */	OPT_UNIT,
-	/* 0xd5   */	OPT_OLD_STYLE,
-	/* 0xd6   */	OPT_SECTIONS,
-	/* 0xd7   */	OPT_LIMIT,
-	/* 0xd8   */	OPT_FILE_LIMIT,
-	/* 0xd9   */	OPT_PATCH_FILE,
-	/* 0xda   */	 0,0,0,0, 0,0,
+	/* 0x87   */	OPT_DSYNC,
+	/* 0x88   */	OPT_DIRECT,
+	/* 0x89   */	OPT_UTF_8,
+	/* 0x8a   */	OPT_NO_UTF_8,
+	/* 0x8b   */	OPT_LANG,
+	/* 0x8c   */	OPT_CERT,
+	/* 0x8d   */	OPT_OLD,
+	/* 0x8e   */	OPT_NEW,
+	/* 0x8f   */	OPT_NO_EXPAND,
+	/* 0x90   */	OPT_RDEPTH,
+	/* 0x91   */	OPT_INCLUDE_FIRST,
+	/* 0x92   */	OPT_JOB_LIMIT,
+	/* 0x93   */	OPT_FAKE_SIGN,
+	/* 0x94   */	OPT_IGNORE_FST,
+	/* 0x95   */	OPT_IGNORE_SETUP,
+	/* 0x96   */	OPT_LINKS,
+	/* 0x97   */	OPT_PSEL,
+	/* 0x98   */	OPT_RAW,
+	/* 0x99   */	OPT_PMODE,
+	/* 0x9a   */	OPT_FLAT,
+	/* 0x9b   */	OPT_COPY_GC,
+	/* 0x9c   */	OPT_NO_LINK,
+	/* 0x9d   */	OPT_NEEK,
+	/* 0x9e   */	OPT_HOOK,
+	/* 0x9f   */	OPT_ENC,
+	/* 0xa0   */	OPT_MODIFY,
+	/* 0xa1   */	OPT_NAME,
+	/* 0xa2   */	OPT_ID,
+	/* 0xa3   */	OPT_DISC_ID,
+	/* 0xa4   */	OPT_BOOT_ID,
+	/* 0xa5   */	OPT_TICKET_ID,
+	/* 0xa6   */	OPT_TMD_ID,
+	/* 0xa7   */	OPT_TT_ID,
+	/* 0xa8   */	OPT_WBFS_ID,
+	/* 0xa9   */	OPT_REGION,
+	/* 0xaa   */	OPT_COMMON_KEY,
+	/* 0xab   */	OPT_IOS,
+	/* 0xac   */	OPT_HTTP,
+	/* 0xad   */	OPT_DOMAIN,
+	/* 0xae   */	OPT_WIIMMFI,
+	/* 0xaf   */	OPT_TWIIMMFI,
+	/* 0xb0   */	OPT_RM_FILES,
+	/* 0xb1   */	OPT_ZERO_FILES,
+	/* 0xb2   */	OPT_OVERLAY,
+	/* 0xb3   */	OPT_REPL_FILE,
+	/* 0xb4   */	OPT_ADD_FILE,
+	/* 0xb5   */	OPT_IGNORE_FILES,
+	/* 0xb6   */	OPT_TRIM,
+	/* 0xb7   */	OPT_ALIGN,
+	/* 0xb8   */	OPT_ALIGN_PART,
+	/* 0xb9   */	OPT_ALIGN_FILES,
+	/* 0xba   */	OPT_AUTO_SPLIT,
+	/* 0xbb   */	OPT_NO_SPLIT,
+	/* 0xbc   */	OPT_DISC_SIZE,
+	/* 0xbd   */	OPT_PREALLOC,
+	/* 0xbe   */	OPT_TRUNC,
+	/* 0xbf   */	OPT_CHUNK_MODE,
+	/* 0xc0   */	OPT_CHUNK_SIZE,
+	/* 0xc1   */	OPT_MAX_CHUNKS,
+	/* 0xc2   */	OPT_BLOCK_SIZE,
+	/* 0xc3   */	OPT_COMPRESSION,
+	/* 0xc4   */	OPT_MEM,
+	/* 0xc5   */	OPT_DIFF,
+	/* 0xc6   */	OPT_WDF1,
+	/* 0xc7   */	OPT_WDF2,
+	/* 0xc8   */	OPT_ALIGN_WDF,
+	/* 0xc9   */	OPT_WIA,
+	/* 0xca   */	OPT_GCZ_ZIP,
+	/* 0xcb   */	OPT_GCZ_BLOCK,
+	/* 0xcc   */	OPT_FST,
+	/* 0xcd   */	OPT_ITIME,
+	/* 0xce   */	OPT_MTIME,
+	/* 0xcf   */	OPT_CTIME,
+	/* 0xd0   */	OPT_ATIME,
+	/* 0xd1   */	OPT_TIME,
+	/* 0xd2   */	OPT_NUMERIC,
+	/* 0xd3   */	OPT_TECHNICAL,
+	/* 0xd4   */	OPT_REALPATH,
+	/* 0xd5   */	OPT_UNIT,
+	/* 0xd6   */	OPT_OLD_STYLE,
+	/* 0xd7   */	OPT_SECTIONS,
+	/* 0xd8   */	OPT_LIMIT,
+	/* 0xd9   */	OPT_FILE_LIMIT,
+	/* 0xda   */	OPT_PATCH_FILE,
+	/* 0xdb   */	 0,0,0,0, 0,
 	/* 0xe0   */	 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
 	/* 0xf0   */	 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
 };
@@ -2241,6 +2252,7 @@ static const InfoOption_t * option_tab_tool[] =
 	OptionInfo + OPT_NO_COLOR,
 	OptionInfo + OPT_IO,
 	OptionInfo + OPT_FORCE,
+	OptionInfo + OPT_DSYNC,
 
 	OptionInfo + OPT_NONE, // separator
 
@@ -3941,7 +3953,7 @@ static const InfoCommand_t CommandInfo[CMD__N+1] =
 	" images. It also can create and dump different other Wii file"
 	" formats.",
 	0,
-	24,
+	25,
 	option_tab_tool,
 	0
     },
@@ -4154,8 +4166,8 @@ static const InfoCommand_t CommandInfo[CMD__N+1] =
 	"Patch a dol file. A sub-command is either (upper case are keywords)"
 	" 'XML=filname' or 'NEW=type,addr,size' or 'NEW=type,AUTO ' or"
 	" 'LOAD=addr,filename' or 'addr=patch[#cond]', and 'type' is either"
-	" 'TEXT' or 'DATA'. Read http://wit.wiimm.de/cmd/wit/dolpatch for more"
-	" details.",
+	" 'TEXT' or 'DATA'. Read https://wit.wiimm.de/cmd/wit/dolpatch for"
+	" more details.",
 	0,
 	8,
 	option_tab_cmd_DOLPATCH,
@@ -4593,7 +4605,7 @@ static const InfoCommand_t CommandInfo[CMD__N+1] =
 	"wit SKELETON [source]...",
 	"Create very small skeletons of ISO images. A skeleton contains only"
 	" disc and partition headers for further analysis and is not playable"
-	" because all files are zeroed. Read http://wit.wiimm.de/cmd/wit/skel"
+	" because all files are zeroed. Read https://wit.wiimm.de/cmd/wit/skel"
 	" for more details.",
 	0,
 	34,
@@ -4614,7 +4626,7 @@ static const InfoCommand_t CommandInfo[CMD__N+1] =
 	"                  | 'ignore' ruleset\n"
 	"                  | 'header'\n"
 	"                  | 'region'\n"
-	"Read http://wit.wiimm.de/cmd/wit/mix for more details.",
+	"Read https://wit.wiimm.de/cmd/wit/mix for more details.",
 	"Mix the partitions from different sources into one new Wii or"
 	" GameCube disc.",
 	0,

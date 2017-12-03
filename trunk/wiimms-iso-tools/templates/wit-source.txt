@@ -12,6 +12,6 @@ Latest beta:
   Browsing:  http://opensvn.wiimm.de/viewvc/wii/branches/public/wiimms-iso-tools/
 
 Infos, binaries and source code can be found at the WIT homepage:
-  http://wit.wiimm.de/
+  https://wit.wiimm.de/
 
 @@@@-@@-@@, Wiimm

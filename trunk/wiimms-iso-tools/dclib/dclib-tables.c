@@ -259,53 +259,79 @@ const u32 TableCRC32[0x100] =
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////			BASE64 support			///////////////
 ///////////////////////////////////////////////////////////////////////////////
+// https://en.wikipedia.org/wiki/Base64
 
 char TableDecode64[256] =
 {
-	DN, DC, DC, DC,  DC, DC, DC, DC,  DC, DS, DS, DC,  DS, DS, DC, DC,
-	DC, DC, DC, DC,  DC, DC, DC, DC,  DC, DC, DC, DC,  DC, DC, DC, DC,
-	DS, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, 62,  DP, DX, DX, 63,
-	52, 53, 54, 55,  56, 57, 58, 59,  60, 61, DX, DP,  DX, DF, DX, DX,
+	DN, DC, DC, DC,  DC, DC, DC, DC,  DC, DS, DS, DC,  DS, DS, DC, DC, // 0x
+	DC, DC, DC, DC,  DC, DC, DC, DC,  DC, DC, DC, DC,  DC, DC, DC, DC, // 1x
+	DS, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, 62,  DP, DX, DX, 63, // 2x
+	52, 53, 54, 55,  56, 57, 58, 59,  60, 61, DX, DP,  DX, DF, DX, DX, // 3x
 
-	DX,  0,  1,  2,   3,  4,  5,  6,   7,  8,  9, 10,  11, 12, 13, 14,
-	15, 16, 17, 18,  19, 20, 21, 22,  23, 24, 25, DX,  DX, DX, DX, DX,
-	DX, 26, 27, 28,  29, 30, 31, 32,  33, 34, 35, 36,  37, 38, 39, 40,
-	41, 42, 43, 44,  45, 46, 47, 48,  49, 50, 51, DX,  DX, DX, DX, DX,
+	DX,  0,  1,  2,   3,  4,  5,  6,   7,  8,  9, 10,  11, 12, 13, 14, // 4x
+	15, 16, 17, 18,  19, 20, 21, 22,  23, 24, 25, DX,  DX, DX, DX, DX, // 5x
+	DX, 26, 27, 28,  29, 30, 31, 32,  33, 34, 35, 36,  37, 38, 39, 40, // 6x
+	41, 42, 43, 44,  45, 46, 47, 48,  49, 50, 51, DX,  DX, DX, DX, DX, // 7x
 
-	DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX,
-	DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX,
-	DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX,
-	DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX,
+	DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX, // 8x
+	DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX, // 9x
+	DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX, // Ax
+	DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX, // Bx
 
-	DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX,
-	DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX,
-	DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX,
-	DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX
+	DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX, // Cx
+	DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX, // Dx
+	DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX, // Ex
+	DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX  // Fx
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-char TableDecode64x[256] = // used by Nintendo/Gamespy
+char TableDecode64url[256] =
 {
-	DN, DC, DC, DC,  DC, DC, DC, DC,  DC, DS, DS, DC,  DS, DS, DC, DC,
-	DC, DC, DC, DC,  DC, DC, DC, DC,  DC, DC, DC, DC,  DC, DC, DC, DC,
-	DS, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DF, 62,  DP, 63, 62, 63,
-	52, 53, 54, 55,  56, 57, 58, 59,  60, 61, DX, DP,  DX, DF, DX, DX,
+	DN, DC, DC, DC,  DC, DC, DC, DC,  DC, DS, DS, DC,  DS, DS, DC, DC, // 0x
+	DC, DC, DC, DC,  DC, DC, DC, DC,  DC, DC, DC, DC,  DC, DC, DC, DC, // 1x
+	DS, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DF, 62,  DP, 62, DX, 63, // 2x
+	52, 53, 54, 55,  56, 57, 58, 59,  60, 61, DX, DP,  DX, DF, DX, DX, // 3x
 
-	DX,  0,  1,  2,   3,  4,  5,  6,   7,  8,  9, 10,  11, 12, 13, 14,
-	15, 16, 17, 18,  19, 20, 21, 22,  23, 24, 25, DX,  DX, DX, DX, DX,
-	DX, 26, 27, 28,  29, 30, 31, 32,  33, 34, 35, 36,  37, 38, 39, 40,
-	41, 42, 43, 44,  45, 46, 47, 48,  49, 50, 51, DX,  DX, DX, DX, DX,
+	DX,  0,  1,  2,   3,  4,  5,  6,   7,  8,  9, 10,  11, 12, 13, 14, // 4x
+	15, 16, 17, 18,  19, 20, 21, 22,  23, 24, 25, DX,  DX, DX, DX, 63, // 5x
+	DX, 26, 27, 28,  29, 30, 31, 32,  33, 34, 35, 36,  37, 38, 39, 40, // 6x
+	41, 42, 43, 44,  45, 46, 47, 48,  49, 50, 51, DX,  DX, DX, DX, DX, // 7x
 
-	DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX,
-	DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX,
-	DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX,
-	DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX,
+	DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX, // 8x
+	DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX, // 9x
+	DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX, // Ax
+	DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX, // Bx
 
-	DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX,
-	DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX,
-	DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX,
-	DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX
+	DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX, // Cx
+	DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX, // Dx
+	DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX, // Ex
+	DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX  // Fx
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+char TableDecode64xml[256] =
+{
+	DN, DC, DC, DC,  DC, DC, DC, DC,  DC, DS, DS, DC,  DS, DS, DC, DC, // 0x
+	DC, DC, DC, DC,  DC, DC, DC, DC,  DC, DC, DC, DC,  DC, DC, DC, DC, // 1x
+	DS, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DF, 62,  DP, 63, 62, 63, // 2x
+	52, 53, 54, 55,  56, 57, 58, 59,  60, 61, 63, DP,  DX, DF, DX, DX, // 3x
+
+	DX,  0,  1,  2,   3,  4,  5,  6,   7,  8,  9, 10,  11, 12, 13, 14, // 4x
+	15, 16, 17, 18,  19, 20, 21, 22,  23, 24, 25, DX,  DX, DX, DX, 62, // 5x
+	DX, 26, 27, 28,  29, 30, 31, 32,  33, 34, 35, 36,  37, 38, 39, 40, // 6x
+	41, 42, 43, 44,  45, 46, 47, 48,  49, 50, 51, DX,  DX, DX, DX, DX, // 7x
+
+	DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX, // 8x
+	DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX, // 9x
+	DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX, // Ax
+	DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX, // Bx
+
+	DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX, // Cx
+	DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX, // Dx
+	DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX, // Ex
+	DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX,  DX, DX, DX, DX  // Fx
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -323,7 +349,33 @@ const char TableEncode64[64+1] =
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const char TableEncode64x[64+1] = // used by Nintendo/Gamespy
+const char TableEncode64url[64+1] =
+{
+	'A','B','C','D','E','F','G','H','I','J','K','L','M',
+	'N','O','P','Q','R','S','T','U','V','W','X','Y','Z',
+	'a','b','c','d','e','f','g','h','i','j','k','l','m',
+	'n','o','p','q','r','s','t','u','v','w','x','y','z',
+	'0','1','2','3','4','5','6','7','8','9',
+	'-','_',
+	'=' // fill char
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+const char TableEncode64star[64+1] =
+{
+	'A','B','C','D','E','F','G','H','I','J','K','L','M',
+	'N','O','P','Q','R','S','T','U','V','W','X','Y','Z',
+	'a','b','c','d','e','f','g','h','i','j','k','l','m',
+	'n','o','p','q','r','s','t','u','v','w','x','y','z',
+	'0','1','2','3','4','5','6','7','8','9',
+	'-','_',
+	'*' // fill char
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+const char TableEncode64xml[64+1] =
 {
 	'A','B','C','D','E','F','G','H','I','J','K','L','M',
 	'N','O','P','Q','R','S','T','U','V','W','X','Y','Z',
@@ -332,6 +384,17 @@ const char TableEncode64x[64+1] = // used by Nintendo/Gamespy
 	'0','1','2','3','4','5','6','7','8','9',
 	'.','-',
 	'*' // fill char
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+// for tests: encode the 48 bytes to get the full BASE64 alphabet
+
+const u8 TableAlphabet64[48] =
+{
+  0x00,0x10,0x83,0x10, 0x51,0x87,0x20,0x92, 0x8b,0x30,0xd3,0x8f, 0x41,0x14,0x93,0x51,
+  0x55,0x97,0x61,0x96, 0x9b,0x71,0xd7,0x9f, 0x82,0x18,0xa3,0x92, 0x59,0xa7,0xa2,0x9a,
+  0xab,0xb2,0xdb,0xaf, 0xc3,0x1c,0xb3,0xd3, 0x5d,0xb7,0xe3,0x9e, 0xbb,0xf3,0xdf,0xbf,
 };
 
 //

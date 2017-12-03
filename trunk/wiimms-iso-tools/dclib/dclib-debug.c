@@ -89,6 +89,7 @@ ccp GetErrorName
 
 	case ERR_DIFFER:		return "DIFFER";
 	case ERR_NOTHING_TO_DO:		return "NOTHING TO DO";
+	case ERR_SOURCE_FOUND:		return "SOURCE FOUND";
 	case ERR_NO_SOURCE_FOUND:	return "NO SOURCE";
 	case ERR_JOB_IGNORED:		return "JOB IGNORED";
 	case ERR_SUBJOB_WARNING:	return "SUB JOB WARNINGS";
@@ -209,6 +210,7 @@ ccp GetErrorText
 
 	case ERR_DIFFER:		return "Files differ";
 	case ERR_NOTHING_TO_DO:		return "Nothing to do";
+	case ERR_SOURCE_FOUND:		return "Source found";
 	case ERR_NO_SOURCE_FOUND:	return "No source found";
 	case ERR_JOB_IGNORED:		return "Job ignored";
 	case ERR_SUBJOB_WARNING:	return "Sub job had warnings";

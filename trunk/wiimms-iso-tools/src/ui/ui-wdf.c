@@ -9,12 +9,12 @@
  *                         \/  \/     |_|    |_|                           *
  *                                                                         *
  *                           Wiimms ISO Tools                              *
- *                         http://wit.wiimm.de/                            *
+ *                         https://wit.wiimm.de/                           *
  *                                                                         *
  ***************************************************************************
  *                                                                         *
  *   This file is part of the WIT project.                                 *
- *   Visit http://wit.wiimm.de/ for project details and sources.           *
+ *   Visit https://wit.wiimm.de/ for project details and sources.          *
  *                                                                         *
  *   Copyright (c) 2009-2017 by Dirk Clemens <wiimm@wiimm.de>              *
  *                                                                         *
@@ -372,6 +372,15 @@ static const InfoOption_t OptionInfo[OPT__N_TOTAL+1] =
 	" value '4' for WIA files. You can combine the values by adding them."
     },
 
+    {	OPT_DSYNC, false, false, false, false, 0, "dsync",
+	0,
+	"The option enables the usage of flag O_DSYNC when opening a partition"
+	" at a hard drive. With activated flag, writing an image is some"
+	" percent slower, but the progress counters are exact again.\n"
+	"  It has only impact, if the compiler and the operation system"
+	" support the flag O_DSYNC. Linux does."
+    },
+
     {	OPT_DIRECT, true, false, false, false, 0, "direct",
 	0,
 	"This option allows the tools to use direct file io for some file"
@@ -406,7 +415,7 @@ static const InfoOption_t OptionInfo[OPT__N_TOTAL+1] =
 	"Use new implementation if available."
     },
 
-    {0,0,0,0,0,0,0,0} // OPT__N_TOTAL == 46
+    {0,0,0,0,0,0,0,0} // OPT__N_TOTAL == 47
 
 };
 
@@ -505,6 +514,7 @@ static const struct option OptionLong[] =
 	{ "no-colors",		0, 0, GO_NO_COLOR },
 	 { "nocolors",		0, 0, GO_NO_COLOR },
 	{ "io",			1, 0, GO_IO },
+	{ "dsync",		0, 0, GO_DSYNC },
 	{ "direct",		0, 0, GO_DIRECT },
 	{ "chunk",		0, 0, GO_CHUNK },
 	{ "long",		0, 0, 'l' },
@@ -566,7 +576,7 @@ static const struct option OptionLong[] =
 
 static u8 OptionUsed[OPT__N_TOTAL+1] = {0};
 
-static const u8 OptionIndex[UIOPT_INDEX_SIZE] = 
+static const OptionIndex_t OptionIndex[UIOPT_INDEX_SIZE] = 
 {
 	/* 0x00   */	 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
 	/* 0x10   */	 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
@@ -610,27 +620,28 @@ static const u8 OptionIndex[UIOPT_INDEX_SIZE] =
 	/* 0x83   */	OPT_COLOR_256,
 	/* 0x84   */	OPT_NO_COLOR,
 	/* 0x85   */	OPT_IO,
-	/* 0x86   */	OPT_DIRECT,
-	/* 0x87   */	OPT_CHUNK,
-	/* 0x88   */	OPT_LIMIT,
-	/* 0x89   */	OPT_FILE_LIMIT,
-	/* 0x8a   */	OPT_BLOCK_SIZE,
-	/* 0x8b   */	OPT_WDF1,
-	/* 0x8c   */	OPT_WDF2,
-	/* 0x8d   */	OPT_ALIGN_WDF,
-	/* 0x8e   */	OPT_WIA,
-	/* 0x8f   */	OPT_WBI,
-	/* 0x90   */	OPT_AUTO_SPLIT,
-	/* 0x91   */	OPT_NO_SPLIT,
-	/* 0x92   */	OPT_PREALLOC,
-	/* 0x93   */	OPT_CHUNK_MODE,
-	/* 0x94   */	OPT_CHUNK_SIZE,
-	/* 0x95   */	OPT_MAX_CHUNKS,
-	/* 0x96   */	OPT_COMPRESSION,
-	/* 0x97   */	OPT_MEM,
-	/* 0x98   */	OPT_OLD,
-	/* 0x99   */	OPT_NEW,
-	/* 0x9a   */	 0,0,0,0, 0,0,
+	/* 0x86   */	OPT_DSYNC,
+	/* 0x87   */	OPT_DIRECT,
+	/* 0x88   */	OPT_CHUNK,
+	/* 0x89   */	OPT_LIMIT,
+	/* 0x8a   */	OPT_FILE_LIMIT,
+	/* 0x8b   */	OPT_BLOCK_SIZE,
+	/* 0x8c   */	OPT_WDF1,
+	/* 0x8d   */	OPT_WDF2,
+	/* 0x8e   */	OPT_ALIGN_WDF,
+	/* 0x8f   */	OPT_WIA,
+	/* 0x90   */	OPT_WBI,
+	/* 0x91   */	OPT_AUTO_SPLIT,
+	/* 0x92   */	OPT_NO_SPLIT,
+	/* 0x93   */	OPT_PREALLOC,
+	/* 0x94   */	OPT_CHUNK_MODE,
+	/* 0x95   */	OPT_CHUNK_SIZE,
+	/* 0x96   */	OPT_MAX_CHUNKS,
+	/* 0x97   */	OPT_COMPRESSION,
+	/* 0x98   */	OPT_MEM,
+	/* 0x99   */	OPT_OLD,
+	/* 0x9a   */	OPT_NEW,
+	/* 0x9b   */	 0,0,0,0, 0,
 	/* 0xa0   */	 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
 	/* 0xb0   */	 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
 	/* 0xc0   */	 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
@@ -701,6 +712,7 @@ static const InfoOption_t * option_tab_tool[] =
 	OptionInfo + OPT_COLOR_256,
 	OptionInfo + OPT_NO_COLOR,
 	OptionInfo + OPT_IO,
+	OptionInfo + OPT_DSYNC,
 
 	OptionInfo + OPT_NONE, // separator
 
@@ -839,7 +851,7 @@ static const InfoCommand_t CommandInfo[CMD__N+1] =
 	"  'wdf +CAT' replaces the old tool wdf-cat and 'wdf +DUMP' the old"
 	" tool wdf-dump.",
 	0,
-	13,
+	14,
 	option_tab_tool,
 	0
     },

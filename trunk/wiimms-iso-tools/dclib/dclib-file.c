@@ -3107,7 +3107,7 @@ uint AddFDList
 
     FDList_t	*fdl,	// valid socket list
     int		sock,	// socket to add
-    uint	events	// bit fieled: POLLIN|POLLOUT|POLLERR
+    uint	events	// bit field: POLLIN|POLLOUT|POLLERR
 )
 {
     if ( sock == -1 || !(events&(POLLIN|POLLOUT|POLLERR)) )
@@ -3141,7 +3141,7 @@ uint AddFDList
 
 uint GetEventFDList
 (
-    // returns bit fieled: POLLIN|POLLOUT|POLLERR
+    // returns bit field: POLLIN|POLLOUT|POLLERR
 
     FDList_t	*fdl,		// valid socket list
     int		sock,		// socket to look for

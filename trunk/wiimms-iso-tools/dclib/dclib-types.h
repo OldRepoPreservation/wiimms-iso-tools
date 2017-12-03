@@ -131,6 +131,8 @@ typedef enum enumError
 	ERR_DIFFER,
 	ERU_NOTHING_TO_DO,
 	ERR_NOTHING_TO_DO,
+	ERU_SOURCE_FOUND,
+	ERR_SOURCE_FOUND,
 	ERU_NO_SOURCE_FOUND,
 	ERR_NO_SOURCE_FOUND,
 	ERU_JOB_IGNORED,
@@ -353,8 +355,13 @@ typedef float float32; // float as 32 bit binary data, endian is file dependent
   typedef unsigned long ulong;
 #endif
 
+// [[sha1_hash_t]] [[sha1_id_t]]
 typedef u8 sha1_hash_t[20];
 typedef u8 sha1_id_t[9];	// 8*chars + NULL
+
+// [[uuid_buf_t]] [[uuid_text_t]]
+typedef u8 uuid_buf_t[16];
+typedef char uuid_text_t[37];	// "12345678-1234-1234-1234-123456789012" + NULL
 
 typedef int (*qsort_func)( const void *, const void * );
 typedef int (*qsort_r_func)( const void *, const void *, void * );

@@ -49,6 +49,7 @@ typedef struct float3
 {
     union
     {
+	u32   u[3];
 	float v[3];
 	struct
 	{
@@ -99,6 +100,7 @@ typedef struct double3
 {
     union
     {
+	u64    u[3];
 	double v[3];
 	struct
 	{

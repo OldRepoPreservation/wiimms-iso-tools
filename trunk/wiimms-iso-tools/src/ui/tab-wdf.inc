@@ -9,12 +9,12 @@
  *                         \/  \/     |_|    |_|                           *
  *                                                                         *
  *                           Wiimms ISO Tools                              *
- *                         http://wit.wiimm.de/                            *
+ *                         https://wit.wiimm.de/                           *
  *                                                                         *
  ***************************************************************************
  *                                                                         *
  *   This file is part of the WIT project.                                 *
- *   Visit http://wit.wiimm.de/ for project details and sources.           *
+ *   Visit https://wit.wiimm.de/ for project details and sources.          *
  *                                                                         *
  *   Copyright (c) 2009-2012 by Dirk Clemens <wiimm@wiimm.de>              *
  *                                                                         *
@@ -150,6 +150,9 @@
 		0, 0 /* copy of wit */ },
 
   { T_OPT_GP,	"IO",		"io",
+		0, 0 /* copy of wit */ },
+
+  { T_OPT_G,	"DSYNC",	"dsync",
 		0, 0 /* copy of wit */ },
 
   { H_OPT_G,	"DIRECT",	"direct",

@@ -9,12 +9,12 @@
  *                         \/  \/     |_|    |_|                           *
  *                                                                         *
  *                           Wiimms ISO Tools                              *
- *                         http://wit.wiimm.de/                            *
+ *                         https://wit.wiimm.de/                           *
  *                                                                         *
  ***************************************************************************
  *                                                                         *
  *   This file is part of the WIT project.                                 *
- *   Visit http://wit.wiimm.de/ for project details and sources.           *
+ *   Visit https://wit.wiimm.de/ for project details and sources.          *
  *                                                                         *
  *   Copyright (c) 2009-2017 by Dirk Clemens <wiimm@wiimm.de>              *
  *                                                                         *
@@ -3910,6 +3910,7 @@ enumError CheckOptions ( int argc, char ** argv, bool is_env )
 	case GO_NO_COLOR:	opt_colorize = -1; break;
 	case GO_IO:		ScanIOMode(optarg); break;
 	case GO_FORCE:		opt_force++; break;
+	case GO_DSYNC:		opt_dsync++; break;
 	case GO_DIRECT:		opt_direct++; break;
 
 	case GO_TITLES:		AtFileHelper(optarg,0,0,AddTitleFile); break;

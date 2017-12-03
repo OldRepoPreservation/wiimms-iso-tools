@@ -9,12 +9,12 @@
  *                         \/  \/     |_|    |_|                           *
  *                                                                         *
  *                           Wiimms ISO Tools                              *
- *                         http://wit.wiimm.de/                            *
+ *                         https://wit.wiimm.de/                           *
  *                                                                         *
  ***************************************************************************
  *                                                                         *
  *   This file is part of the WIT project.                                 *
- *   Visit http://wit.wiimm.de/ for project details and sources.           *
+ *   Visit https://wit.wiimm.de/ for project details and sources.          *
  *                                                                         *
  *   Copyright (c) 2009-2017 by Dirk Clemens <wiimm@wiimm.de>              *
  *                                                                         *
@@ -3781,21 +3781,46 @@ u32 ScanPartFST
     SortPartFST(part,SORT_NAME,SORT_NAME);
 
 
-    //----- generate file table ('fst.bin')
+    //----- generate file table ('fst.bin' & 'fst+.bin')
+
+    *sd.path_part = 0;
+ #if SUPPORT_FST_PLUS
+    const u32 fst_plus_fsize = GetFileSize(sd.path,"sys/fst+.bin",0,0,false);
+    const u32 fst_plus_size = fst_plus_fsize ? 4 + ALIGN32(fst_plus_fsize,4) : 0;
+ #else
+    const u32 fst_plus_size = 0;
+ #endif
 
     // alloc buffer
     sd.name_pool_size = ALIGN32(sd.name_pool_size,4);
-    part->ftab_size = sizeof(wd_fst_item_t) * part->file_used + sd.name_pool_size;
+    part->ftab_size = sizeof(wd_fst_item_t) * part->file_used
+			+ sd.name_pool_size + fst_plus_size;
     part->ftab = CALLOC(part->ftab_size,1);
+
+ #if SUPPORT_FST_PLUS
+    if ( fst_plus_size > 0 )
+    {
+	u8 *dest = part->ftab + part->ftab_size - fst_plus_size;
+	memcpy(dest,"fst+",4);
+	LoadFile(sd.path, "sys/fst+.bin", 0, dest+4,
+		fst_plus_fsize, 0, 0, false );
+    }
+ #endif
+
     wd_fst_item_t * ftab = (wd_fst_item_t*)part->ftab;
     char *namebase = (char*)(ftab + part->file_used);
     char *nameptr = namebase;
-    ASSERT( (u8*)namebase + sd.name_pool_size == part->ftab + part->ftab_size );
+    ASSERT( (u8*)namebase + sd.name_pool_size + fst_plus_size
+		== part->ftab + part->ftab_size );
 
     if (boot)
     {
 	boot->fst_off4  = htonl(cur_offset4);
 	boot->fst_size4 = boot->max_fst_size4 = htonl(part->ftab_size>>2);
+ #if SUPPORT_FST_PLUS
+	if (fst_plus_size)
+	    boot->max_fst_size4 = htonl(part->ftab_size+0x100>>2);
+ #endif
     }
 
     IsoMappingItem_t * imi;

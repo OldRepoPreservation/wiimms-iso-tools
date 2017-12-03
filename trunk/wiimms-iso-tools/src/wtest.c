@@ -9,12 +9,12 @@
  *                         \/  \/     |_|    |_|                           *
  *                                                                         *
  *                           Wiimms ISO Tools                              *
- *                         http://wit.wiimm.de/                            *
+ *                         https://wit.wiimm.de/                           *
  *                                                                         *
  ***************************************************************************
  *                                                                         *
  *   This file is part of the WIT project.                                 *
- *   Visit http://wit.wiimm.de/ for project details and sources.           *
+ *   Visit https://wit.wiimm.de/ for project details and sources.          *
  *                                                                         *
  *   Copyright (c) 2009-2017 by Dirk Clemens <wiimm@wiimm.de>              *
  *                                                                         *
@@ -1118,7 +1118,9 @@ static void test_aligned_io_open ( AlignedIO_t *ai, ccp fname, int flags, ccp in
 static void test_aligned_io_basics ( ccp fname )
 {
     AlignedIO_t ai;
+ #ifdef O_DIRECT
     test_aligned_io_open(&ai,fname,O_RDONLY|O_DIRECT,"BASIC");
+ #endif
     ResetAlignedIO(&ai,true);
 }
 

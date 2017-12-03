@@ -456,7 +456,6 @@ char * StringCat3S ( char * buf, size_t buf_size, ccp src1, ccp src2, ccp src3 )
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
 
 char * StringLowerE ( char * buf, ccp buf_end, ccp src )
 {
@@ -514,7 +513,40 @@ char * StringUpperS ( char * buf, size_t buf_size, ccp src )
     return StringUpperE(buf,buf+buf_size,src);
 }
 
+//
 ///////////////////////////////////////////////////////////////////////////////
+///////////////				PathCat*()		///////////////
+///////////////////////////////////////////////////////////////////////////////
+
+char * PathCatBufPP ( char * buf, size_t bufsize, ccp path1, ccp path2 )
+{
+    // concatenate path + path; returns buf
+
+    DASSERT(buf);
+    DASSERT(bufsize);
+    
+    if ( !path1 || !*path1 )
+    {
+	if (path2)
+	    StringCopyS(buf,bufsize,path2);
+	else
+	    *buf = 0;
+	return buf;
+    }
+
+    char * ptr = StringCopyS(buf,bufsize-1,path1);
+    DASSERT( ptr > buf );
+    if ( ptr[-1] != '/' )
+	*ptr++ = '/';
+    if (path2)
+    {
+	while ( *path2 == '/' )
+	    path2++;
+	StringCopyE(ptr,buf+bufsize,path2);
+    }
+    return buf;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 ccp PathCatPP ( char * buf, size_t bufsize, ccp path1, ccp path2 )
@@ -546,14 +578,19 @@ ccp PathAllocPP ( ccp path1, ccp path2 )
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 
-ccp PathCatPPE ( char * buf, size_t bufsize, ccp path1, ccp path2, ccp ext )
+char * PathCatBufPPE ( char * buf, size_t bufsize, ccp path1, ccp path2, ccp ext )
 {
     // concatenate path + path; returns (by definition) path1 | path2 | buf
 
-    char * ptr = path1 ? StringCopyS(buf,bufsize-1,path1) : buf;
+    DASSERT(buf);
+    DASSERT(bufsize);
+
+    char *ptr = path1 ? StringCopyS(buf,bufsize-1,path1) : buf;
     if ( ptr > buf && ptr[-1] != '/' )
 	*ptr++ = '/';
+    *ptr = 0;
 
     if (path2)
     {
@@ -570,6 +607,10 @@ ccp PathCatPPE ( char * buf, size_t bufsize, ccp path1, ccp path2, ccp ext )
 
 ///////////////////////////////////////////////////////////////////////////////
 
+// PathCatPPE() is inline
+
+///////////////////////////////////////////////////////////////////////////////
+
 ccp PathAllocPPE ( ccp path1, ccp path2, ccp ext )
 {
     char buf[PATH_MAX];
@@ -579,14 +620,18 @@ ccp PathAllocPPE ( ccp path1, ccp path2, ccp ext )
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-ccp PathCatBP ( char *buf, size_t bufsize, ccp base, ccp path )
+char * PathCatBufBP ( char *buf, size_t bufsize, ccp base, ccp path )
 {
     // PathCatBP() is special: path can be part of buf
 
     if (!path)
 	path = "";
     if ( *path == '/' || base && !*base )
-	return path; // already absolute | no base to add
+    {
+	// already absolute | no base to add
+	StringCopyS(buf,bufsize,path);
+	return buf;
+    }
 
 
     //--- now copy base or cwd
@@ -617,10 +662,31 @@ ccp PathCatBP ( char *buf, size_t bufsize, ccp base, ccp path )
 
 ///////////////////////////////////////////////////////////////////////////////
 
+ccp PathCatBP ( char *buf, size_t bufsize, ccp base, ccp path )
+{
+    // PathCatBP() is special: path can be part of buf
+
+    if ( path && *path == '/' || base && !*base )
+	return path; // already absolute | no base to add
+
+    return PathCatBufBP(buf,bufsize,base,path);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 ccp PathAllocBP ( ccp base, ccp path )
 {
     char buf[PATH_MAX];
     return STRDUP(PathCatBP(buf,sizeof(buf),base,path));
+}
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+char * PathCatBufBPP ( char * buf, size_t bufsize, ccp base, ccp path1, ccp path2 )
+{
+    ccp path = PathCatPP(buf,bufsize,path1,path2);
+    return PathCatBufBP(buf,bufsize,base,path);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -637,6 +703,15 @@ ccp PathAllocBPP ( ccp base, ccp path1, ccp path2 )
 {
     char buf[PATH_MAX];
     return STRDUP(PathCatBPP(buf,sizeof(buf),base,path1,path2));
+}
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+char * PathCatBufBPPE ( char * buf, size_t bufsize, ccp base, ccp path1, ccp path2, ccp ext )
+{
+    ccp path = PathCatPPE(buf,bufsize,path1,path2,ext);
+    return PathCatBufBP(buf,bufsize,base,path);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -6630,7 +6705,7 @@ void RestoreStateGrowBuffer
 	while ( size > 0 )
 	{
 	    snprintf(name,sizeof(name),"%sdata-%u",name_prefix,index++);
-	    int res = GetParamFieldBUF(buf,sizeof(buf),rs,name,ENCODE_BASE64X,0);
+	    int res = GetParamFieldBUF(buf,sizeof(buf),rs,name,ENCODE_BASE64URL,0);
 	    if ( res < 0 )
 		break;
 

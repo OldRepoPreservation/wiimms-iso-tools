@@ -40,6 +40,34 @@
 
 //
 ///////////////////////////////////////////////////////////////////////////////
+///////////////			  definitions			///////////////
+///////////////////////////////////////////////////////////////////////////////
+// [[OptionIndex_t]] // max size of OptionIndex[]
+
+#ifndef UIOPT_INDEX_SIZE
+  #define UIOPT_INDEX_SIZE 0x100
+#endif
+
+#undef UIOPT_INDEX_FW
+
+#if UIOPT_INDEX_SIZE <= 0x100
+  #define UIOPT_INDEX_FW 2
+  typedef u8 OptionIndex_t;
+#else
+  #define UIOPT_INDEX_FW 3
+  typedef u16 OptionIndex_t;
+#endif
+
+///////////////////////////////////////////////////////////////////////////////
+
+enum // some const
+{
+    UIOPT_USED_MASK	=   0x7f,	// mask to calculate usage count
+    UIOPT_LONG_BASE	=   0x80,	// first index for "only long options"
+};
+
+//
+///////////////////////////////////////////////////////////////////////////////
 ///////////////			  InfoOption_t			///////////////
 ///////////////////////////////////////////////////////////////////////////////
 // [[InfoOption_t]]
@@ -104,7 +132,7 @@ typedef struct InfoUI_t
     int			n_opt_total;	// == OPT__N_TOTAL
     const InfoOption_t	* opt_info;	// pointer to 'OptionInfo[]'
     u8			* opt_used;	// pointer to 'OptionUsed[]'
-    const u8		* opt_index;	// pointer to 'OptionIndex[]'
+    const OptionIndex_t	* opt_index;	// pointer to 'OptionIndex[]'
     ccp			opt_short;	// pointer to 'OptionShort[]'
     const struct option	* opt_long;	// pointer to 'OptionLong[]'
 
@@ -114,14 +142,6 @@ typedef struct InfoUI_t
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////			    Interface			///////////////
 ///////////////////////////////////////////////////////////////////////////////
-
-enum // some const
-{
-    UIOPT_USED_MASK	=   0x7f,	// mask to calculate usage count
-    UIOPT_LONG_BASE	=   0x80,	// first index for "only long options"
-    UIOPT_INDEX_SIZE	=  0x100,	// size of OptionIndex[]
-};
-
 ///////////////////////////////////////////////////////////////////////////////
 
 enumError RegisterOptionByIndex

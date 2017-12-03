@@ -1175,22 +1175,31 @@ int StrNumCmp ( ccp a, ccp b );
 // count the number of equal bytes and return a value of 0 to SIZE
 uint CountEqual ( cvp m1, cvp m2, uint size );
 
-// Concatenate path + path
-// Return pointer to path1|path2|buf  or  alloced string
-ccp PathCatPP    ( char *buf, size_t bufsize, ccp path1, ccp path2 );
-ccp PathCatPPE   ( char *buf, size_t bufsize, ccp path1, ccp path2, ccp ext );
-ccp PathAllocPP  ( ccp path1, ccp path2 );
-ccp PathAllocPPE ( ccp path1, ccp path2, ccp ext );
+// Concatenate path + path, return pointer to buf
+// Return pointer to   buf  or  path1|path2|buf  or  alloced string
+char *PathCatBufPP  ( char *buf, size_t bufsize, ccp path1, ccp path2 );
+char *PathCatBufPPE ( char *buf, size_t bufsize, ccp path1, ccp path2, ccp ext );
+ccp PathCatPP	    ( char *buf, size_t bufsize, ccp path1, ccp path2 );
+//ccp PathCatPPE    ( char *buf, size_t bufsize, ccp path1, ccp path2, ccp ext );
+ccp PathAllocPP	    ( ccp path1, ccp path2 );
+ccp PathAllocPPE    ( ccp path1, ccp path2, ccp ext );
+
+// inline wrapper
+static inline ccp PathCatPPE ( char *buf, size_t bufsize, ccp path1, ccp path2, ccp ext )
+	{ return PathCatBufPPE(buf,bufsize,path1,path2,ext); }
 
 // Same as PathCatPP*(), but use 'base' as prefix for relative pathes.
 // If 'base' is NULL (but not empty), use getcwd() instead.
-// PathCatBP() is special: path can be part of buf
-ccp PathCatBP     ( char *buf, size_t bufsize, ccp base, ccp path );
-ccp PathCatBPP    ( char *buf, size_t bufsize, ccp base, ccp path1, ccp path2 );
-ccp PathCatBPPE   ( char *buf, size_t bufsize, ccp base, ccp path1, ccp path2, ccp ext );
-ccp PathAllocBP   ( ccp base, ccp path );
-ccp PathAllocBPP  ( ccp base, ccp path1, ccp path2 );
-ccp PathAllocBPPE ( ccp base, ccp path1, ccp path2, ccp ext );
+// PathCatBufBP() and PathCatBP() are special: path can be part of buf
+char *PathCatBufBP   ( char *buf, size_t bufsize, ccp base, ccp path );
+char *PathCatBufBPP  ( char *buf, size_t bufsize, ccp base, ccp path1, ccp path2 );
+char *PathCatBufBPPE ( char *buf, size_t bufsize, ccp base, ccp path1, ccp path2, ccp ext );
+ccp PathCatBP        ( char *buf, size_t bufsize, ccp base, ccp path );
+ccp PathCatBPP       ( char *buf, size_t bufsize, ccp base, ccp path1, ccp path2 );
+ccp PathCatBPPE      ( char *buf, size_t bufsize, ccp base, ccp path1, ccp path2, ccp ext );
+ccp PathAllocBP      ( ccp base, ccp path );
+ccp PathAllocBPP     ( ccp base, ccp path1, ccp path2 );
+ccp PathAllocBPPE    ( ccp base, ccp path1, ccp path2, ccp ext );
 
 char * PathCombine     ( char *temp_buf, uint buf_size, ccp path, ccp base_path );
 char * PathCombineFast ( char *dest_buf, uint buf_size, ccp path, ccp base_path );
@@ -1773,7 +1782,9 @@ typedef enum EncodeMode_t // select encodig/decoding method
     ENCODE_STRING,	// ScanEscapedString(ANSI), byte mode
     ENCODE_UTF8,	// ScanEscapedString(UTF8), force UTF8 on decoding
     ENCODE_BASE64,	// Base64
-    ENCODE_BASE64X,	// Base64 with alternate chars / enc: use alt / dec: allow alt
+    ENCODE_BASE64URL,	// Base64.URL (=) / decoder detects Standard + URL + STAR
+    ENCODE_BASE64STAR,	// Base64.URL (*) / decoder detects Standard + URL + STAR
+    ENCODE_BASE64XML,	// Base64 with XML name tokens / decoder detects Standard + XML (name+id)
     ENCODE_JSON,	// JSON string encoding
 
     ENCODE__N		// number of encoding modes
@@ -1795,10 +1806,22 @@ enum DecodeType_t // for decoding tables
 };
 
 extern const char TableNumbers[256];
-extern       char TableDecode64[256];
-extern       char TableDecode64x[256];
-extern const char TableEncode64[64+1];	// last char is filler
-extern const char TableEncode64x[64+1];	// last char is filler
+
+extern       char TableDecode64[256];		// Standard coding
+extern       char TableDecode64url[256];	// Standard + URL + STAR coding
+extern       char TableDecode64xml[256];	// Standard + XML (name tokens + identifiers)
+
+extern const char TableEncode64[64+1];		// last char is filler
+extern const char TableEncode64url[64+1];	// URL coding, used by Nintendo
+extern const char TableEncode64star[64+1];	// Like URL, with '*' instead of '=' as filler
+extern const char TableEncode64xml[64+1];	// XML name tokens
+
+// for tests: encode the 48 bytes to get the full BASE64 alphabet
+extern const u8 TableAlphabet64[48];
+
+// Default tables for DecodeBase64() and EncodeBase64(), if no table is defined.
+// They are initialized with TableDecode64[] and TableEncode64[].
+extern ccp TableDecode64default, TableEncode64default;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -1860,7 +1883,7 @@ uint DecodeBase64
     uint	buf_size,		// size of 'buf', >= 3
     ccp		source,			// NULL or string to decode
     int		len,			// length of string. if -1, str is null terminated
-    const char	decode64[256],		// decoding table; if NULL: use TableDecode64
+    const char	decode64[256],		// decoding table; if NULL: use TableDecode64default
     bool	allow_white_spaces,	// true: skip white spaces
     uint	*scanned_len		// not NULL: Store number of scanned 'str' bytes here
 );
@@ -1875,7 +1898,7 @@ uint EncodeBase64
     uint	buf_size,		// size of 'buf', >= 4
     const void	*source,		// NULL or data to encode
     int		source_len,		// length of 'source'; if <0: use strlen(source)
-    const char	encode64[64+1],		// encoding table; if NULL: use TableEncode64
+    const char	encode64[64+1],		// encoding table; if NULL: use TableEncode64default
     bool	use_filler,		// use filler for aligned output
     ccp		next_line,		// not NULL: use this string as new line sep
     uint	next_line_trigger	// >0: use 'next_line' every # input bytes
@@ -2226,11 +2249,25 @@ int ScanCommandList
 ///////////////			numeric functions		///////////////
 ///////////////////////////////////////////////////////////////////////////////
 
+extern int urandom_available; // <0:not, =0:not tested, >0:ok
+extern bool use_urandom_for_myrandom;
+
+uint ReadFromUrandom ( void *dest, uint size );
+
+///////////////////////////////////////////////////////////////////////////////
+
 u32 MyRandom ( u32 max );
 u64 MySeed ( u64 base );
 u64 MySeedByTime();
 
 void MyRandomFill ( void * buf, size_t size );
+
+///////////////////////////////////////////////////////////////////////////////
+
+void CreateUUID ( uuid_buf_t dest );
+uint CreateTextUUID ( char *buf, uint bufsize );
+uint PrintUUID ( char *buf, uint bufsize, uuid_buf_t uuid );
+char * ScanUUID ( uuid_buf_t uuid, ccp source );
 
 ///////////////////////////////////////////////////////////////////////////////
 

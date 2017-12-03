@@ -9,12 +9,12 @@
  *                         \/  \/     |_|    |_|                           *
  *                                                                         *
  *                           Wiimms ISO Tools                              *
- *                         http://wit.wiimm.de/                            *
+ *                         https://wit.wiimm.de/                           *
  *                                                                         *
  ***************************************************************************
  *                                                                         *
  *   This file is part of the WIT project.                                 *
- *   Visit http://wit.wiimm.de/ for project details and sources.           *
+ *   Visit https://wit.wiimm.de/ for project details and sources.          *
  *                                                                         *
  *   Copyright (c) 2009-2017 by Dirk Clemens <wiimm@wiimm.de>              *
  *                                                                         *
@@ -578,7 +578,7 @@ void header_128_setup
     id_setup(&dhead->disc_id,id6,6);
 
     if (!disc_title)
-	disc_title = "WIT: Wiimms ISO Tools, http://wit.wiimm.de/";
+	disc_title = "WIT: Wiimms ISO Tools, https://wit.wiimm.de/";
     strncpy(dhead->disc_title,disc_title,sizeof(dhead->disc_title)-1);
 
     if (is_gc)

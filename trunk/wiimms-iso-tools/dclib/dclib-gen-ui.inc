@@ -869,9 +869,10 @@ static enumError Generate ( control_t * ctrl )
 		snprintf(iobuf,sizeof(iobuf),"%d, 0, GO_%s",
 			pmode, info->c_name );
 		ASSERT_MSG( getopt_idx < UIOPT_INDEX_SIZE,
-				"getopt_idx[%x] >= UIOPT_INDEX_SIZE[%x]\n",
+				"getopt_idx >= UIOPT_INDEX_SIZE [ 0x%x >= 0x%x ]\n",
 				getopt_idx, UIOPT_INDEX_SIZE );
-		opt_buf[(u8)(getopt_idx++)] = info->c_name;
+		if ( getopt_idx < UIOPT_INDEX_SIZE )
+		    opt_buf[getopt_idx++] = info->c_name;
 	    }
 
 	    int indent = 0;
@@ -936,9 +937,11 @@ static enumError Generate ( control_t * ctrl )
     var_ptr = snprintfE(var_ptr,var_end,
 		"//extern u8 OptionUsed[OPT__N_TOTAL+1];\n");
 
-    fprintf(cf,"static const u8 OptionIndex[UIOPT_INDEX_SIZE] = \n{\n");
+    fprintf(cf,"static const OptionIndex_t OptionIndex[UIOPT_INDEX_SIZE] = \n{\n");
     var_ptr = snprintfE(var_ptr,var_end,
-		"//extern const u8 OptionIndex[UIOPT_INDEX_SIZE];\n");
+		"//extern const OptionIndex_t OptionIndex[UIOPT_INDEX_SIZE];\n"
+		"//UIOPT_INDEX_SIZE := 0x%x = %u\n",
+		UIOPT_INDEX_SIZE, UIOPT_INDEX_SIZE );
 
     for ( i = 0; i < UIOPT_INDEX_SIZE; )
     {
@@ -949,18 +952,19 @@ static enumError Generate ( control_t * ctrl )
 	while ( len > 0 )
 	{
 	    const int now_len = len < 16 ? len : 16 - start % 16;
-	    fprintf(cf,"\t/* 0x%02x   */\t %.*s\n",
-		    start,
-		    2*now_len + now_len/4,
-		    "0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0," );
+	    fprintf(cf,"\t/* 0x%0*x   */\t %.*s\n",
+			UIOPT_INDEX_FW,
+			start,
+			2*now_len + now_len/4,
+			"0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0," );
 	    start += now_len;
 	    len -= now_len;
 	}
 
 	while ( i < UIOPT_INDEX_SIZE && opt_buf[i] )
 	{
-	    fprintf(cf,"\t/* 0x%02x %c */\tOPT_%s,\n",
-		i, i > ' ' && i < 0x7f ? i : ' ', opt_buf[i]);
+	    fprintf(cf,"\t/* 0x%0*x %c */\tOPT_%s,\n",
+		UIOPT_INDEX_FW, i, i > ' ' && i < 0x7f ? i : ' ', opt_buf[i]);
 	    i++;
 	}
     }

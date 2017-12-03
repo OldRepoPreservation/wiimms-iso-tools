@@ -9,12 +9,12 @@
  *                         \/  \/     |_|    |_|                           *
  *                                                                         *
  *                           Wiimms ISO Tools                              *
- *                         http://wit.wiimm.de/                            *
+ *                         https://wit.wiimm.de/                           *
  *                                                                         *
  ***************************************************************************
  *                                                                         *
  *   This file is part of the WIT project.                                 *
- *   Visit http://wit.wiimm.de/ for project details and sources.           *
+ *   Visit https://wit.wiimm.de/ for project details and sources.          *
  *                                                                         *
  *   Copyright (c) 2009-2017 by Dirk Clemens <wiimm@wiimm.de>              *
  *                                                                         *
@@ -3631,6 +3631,7 @@ static int wd_iterate_fst_helper
 		    return stat;
 	    }
 
+// [[2do]] [[fst+]]
 	    DASSERT( it->icm == WD_ICM_FILE );
 	    it->off4 = sys_files->boot.fst_off4;
 	    it->size = sys_files->boot.fst_size4;
