@@ -14,7 +14,7 @@
  *                                                                         *
  ***************************************************************************
  *                                                                         *
- *        Copyright (c) 2012-2017 by Dirk Clemens <wiimm@wiimm.de>         *
+ *        Copyright (c) 2012-2018 by Dirk Clemens <wiimm@wiimm.de>         *
  *                                                                         *
  ***************************************************************************
  *                                                                         *
@@ -534,6 +534,11 @@ void WAIT_ARG_FUNC ( ccp format, va_list arg );
 ///////////////////////////////////////////////////////////////////////////////
 
 void dclib_free ( void * ptr );
+
+void * dclib_xcalloc  ( size_t nmemb, size_t size );
+void * dclib_xmalloc  ( size_t size );
+void * dclib_xrealloc ( void * ptr, size_t size );
+char * dclib_xstrdup  ( ccp src );
 
 #if TRACE_ALLOC_MODE > 1
     void * dclib_calloc  ( ccp,ccp,uint, size_t nmemb, size_t size );

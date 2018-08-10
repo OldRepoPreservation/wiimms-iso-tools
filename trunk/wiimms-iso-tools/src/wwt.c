@@ -4010,6 +4010,7 @@ enumError CheckOptions ( int argc, char ** argv, bool is_env )
 	case GO_IGNORE_FST:	allow_fst = false; break;
 	case GO_IGNORE_SETUP:	ignore_setup = true; break;
 	case GO_LINKS:		opt_links = true; break;
+	case GO_USER_BIN:	opt_user_bin = true; break;
 
 	case GO_INODE:		break;
 	case GO_DEST:		SetDest(optarg,false); break;

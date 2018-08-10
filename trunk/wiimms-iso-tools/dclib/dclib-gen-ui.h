@@ -14,7 +14,7 @@
  *                                                                         *
  ***************************************************************************
  *                                                                         *
- *        Copyright (c) 2012-2017 by Dirk Clemens <wiimm@wiimm.de>         *
+ *        Copyright (c) 2012-2018 by Dirk Clemens <wiimm@wiimm.de>         *
  *                                                                         *
  ***************************************************************************
  *                                                                         *
@@ -79,7 +79,7 @@ typedef enum enumType
 	F_OPT_GLOBAL	=  0x020000,  // option is global
 	F_OPT_MULTIUSE	=  0x040000,  // multiple usage of option possible
 	F_OPT_PARAM	=  0x080000,  // option needs a parameter
-	F_OPT_OPTPARAM	=  0x100000,  // option accepts a optional parameter
+	F_OPT_OPTPARAM	=  0x100000,  // option accepts an optional parameter
 	F_SEPARATOR	=  0x200000,  // separator element
 	F_SUPERSEDE	=  0x400000,  // supersedes all other commands and options
 	F_IGNORE	=  0x800000,  // ignore on command 'HELP OPTIONS'

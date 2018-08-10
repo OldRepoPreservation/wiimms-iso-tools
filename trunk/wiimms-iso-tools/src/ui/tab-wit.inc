@@ -613,6 +613,11 @@
 		" or extracting discs and try to create hard links instead"
 		" of independent copies on the destination file system." },
 
+  { H_OPT_C,	"USER_BIN",	"user-bin|userbin",
+		0, 
+		"Try to detect file '@sys/user.bin@'."
+		" If available, use it like other system files." },
+
   { T_OPT_C,	"NULL",		"0|null",
 		0,
 		"Terminate each output line with a NUL (ASCII 0) character"
@@ -811,7 +816,11 @@
 		"domain",
 		"This $patching$ option replaces the domain 'nintendowifi.net'"
 		" by the new domain. The length of the new domain must not be"
-		" larger than the old length (16 characters)." },
+		" larger than the old length (16 characters)."
+		"\n "
+		" If the new domain length is not larger than 11,"
+		" then 'gamespy.com' of 'sake.gamespy.com' is replaced too. "
+		" This is a special support for 'Super Smash Bros. Brawl'." },
 
   { T_OPT_C,	"WIIMMFI",	"wiimmfi",
 		0,
@@ -1318,6 +1327,7 @@
   { T_COPT,	"IGNORE_FST",	0,0,0 },
   { T_COPT,	"IGNORE_SETUP",	0,0,0 },
   { T_COPT,	"LINKS",	0,0,0 },
+  { H_COPT,	"USER_BIN",	0,0,0 },
 
   //---------- wit GROUP FST_SELECT ----------
 

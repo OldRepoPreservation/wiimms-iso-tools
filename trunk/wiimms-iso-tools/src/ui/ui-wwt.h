@@ -77,6 +77,7 @@ typedef enum enumOptions
 	OPT_IGNORE_FST,
 	OPT_IGNORE_SETUP,
 	OPT_LINKS,
+	OPT_USER_BIN,
 	OPT_PMODE,
 	OPT_FLAT,
 	OPT_COPY_GC,
@@ -166,7 +167,7 @@ typedef enum enumOptions
 	OPT_SORT,
 	OPT_LIMIT,
 
-	OPT__N_SPECIFIC, // == 110 
+	OPT__N_SPECIFIC, // == 111 
 
 	//----- global options -----
 
@@ -198,7 +199,7 @@ typedef enum enumOptions
 	OPT_ALIGN_WDF,
 	OPT_GCZ_BLOCK,
 
-	OPT__N_TOTAL // == 137
+	OPT__N_TOTAL // == 138
 
 } enumOptions;
 
@@ -234,6 +235,7 @@ typedef enum enumOptions
 //	OB_IGNORE_FST		= 1llu << OPT_IGNORE_FST,
 //	OB_IGNORE_SETUP		= 1llu << OPT_IGNORE_SETUP,
 //	OB_LINKS		= 1llu << OPT_LINKS,
+//	OB_USER_BIN		= 1llu << OPT_USER_BIN,
 //	OB_PMODE		= 1llu << OPT_PMODE,
 //	OB_FLAT			= 1llu << OPT_FLAT,
 //	OB_COPY_GC		= 1llu << OPT_COPY_GC,
@@ -338,7 +340,8 @@ typedef enum enumOptions
 //
 //	OB_GRP_FST_OPTIONS	= OB_IGNORE_FST
 //				| OB_IGNORE_SETUP
-//				| OB_LINKS,
+//				| OB_LINKS
+//				| OB_USER_BIN,
 //
 //	OB_GRP_EXCLUDE		= OB_EXCLUDE
 //				| OB_EXCLUDE_PATH
@@ -587,6 +590,7 @@ typedef enum enumOptions
 //				| OB_GRP_OUTMODE
 //				| OB_GRP_FST_SELECT
 //				| OB_LINKS
+//				| OB_USER_BIN
 //				| OB_UNIQUE
 //				| OB_IGNORE
 //				| OB_REMOVE
@@ -803,6 +807,7 @@ typedef enum enumGetOpt
 	GO_IGNORE_FST,
 	GO_IGNORE_SETUP,
 	GO_LINKS,
+	GO_USER_BIN,
 	GO_PMODE,
 	GO_FLAT,
 	GO_COPY_GC,

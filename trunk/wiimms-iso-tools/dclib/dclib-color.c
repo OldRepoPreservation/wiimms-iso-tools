@@ -14,7 +14,7 @@
  *                                                                         *
  ***************************************************************************
  *                                                                         *
- *        Copyright (c) 2012-2017 by Dirk Clemens <wiimm@wiimm.de>         *
+ *        Copyright (c) 2012-2018 by Dirk Clemens <wiimm@wiimm.de>         *
  *                                                                         *
  ***************************************************************************
  *                                                                         *
@@ -1122,7 +1122,7 @@ ccp GetColorMode
     {
 	static const u8 tab[TCI__N_BG][TCI__N_FONT] =
 	{
-	    //--- background TCI_BLACK
+	    //--- TCI_BLACK
 	    {
 		TCI_DARKGRAY,	// TCI_BLACK
 		TCI_DARKGRAY,	// TCI_DARKGRAY
@@ -1967,6 +1967,33 @@ static void PrintColorSetSH
 
 //-----------------------------------------------------------------------------
 
+static void PrintColorSetPHP
+(
+    // On start of group: col_name := NULL, col_string := NULL
+
+    FILE		*f,		// valid output file
+    int			indent,		// normalized indention of output
+    const ColorSet_t	*cs,		// valid color set, never NULL
+    uint		mode,		// output mode of PrintColorSetHelper()
+    ccp			col_name,	// name of color
+    ccp			col_string	// escape string for the color
+)
+{
+    if (col_name)
+    {
+	DASSERT(col_string);
+
+	char buf[50];
+	PrintEscapedString(buf,sizeof(buf),col_string,-1,false,0,0);
+	if (memcmp(buf,"\\x1B",4))
+	    fprintf(f,"$COL->%-12s = \"%s\"\n",col_name,buf);
+	else
+	    fprintf(f,"$COL->%-12s = \"\\033%s\"\n",col_name,buf+4);
+    }
+}
+
+//-----------------------------------------------------------------------------
+
 void PrintColorSet
 (
     FILE		*f,		// valid output file
@@ -1990,6 +2017,7 @@ void PrintColorSetEx
     uint		format		// output format
 					//   0: colored list
 					//   1: shell definitions
+					//   2: php class
 )
 {
     DASSERT(f);
@@ -2006,6 +2034,12 @@ void PrintColorSetEx
 		fprintf(f,"COL0='%s'\n",buf);
 	    else
 		fprintf(f,"COL0='\\033%s'\n",buf+4);
+	    break;
+
+	case 2:
+	    if (!cs)
+		cs = GetColorSet(true);
+	    PrintColorSetHelper(f,indent,cs,PrintColorSetPHP,mode);
 	    break;
 
 	default:
@@ -2084,10 +2118,10 @@ void ViewColorsAttrib8 ( ColorView_t *cv )
     DASSERT(cv->colset);
 
  #ifdef TEST
-    fprintf(cv->f,"%*s%s() %s, %u colors, modus %d, stdcol %d, order %d\n",
+    fprintf(cv->f,"%*s%s() %s, %u colors, mode %d, stdcol %d, order %d\n",
 	cv->indent,"", __FUNCTION__,
 	GetColorModeName(cv->colset->col_mode),
-	cv->colset->n_colors, cv->modus, cv->std_col, cv->order );
+	cv->colset->n_colors, cv->mode, cv->std_col, cv->order );
  #endif
 
     //--------------------------------------------------
@@ -2171,10 +2205,10 @@ void ViewColorsCombi8 ( ColorView_t *cv )
     DASSERT(cv->colset);
 
  #ifdef TEST
-    fprintf(cv->f,"%*s%s() %s, %u colors, modus %d, stdcol %d, order %d\n",
+    fprintf(cv->f,"%*s%s() %s, %u colors, mode %d, stdcol %d, order %d\n",
 	cv->indent,"", __FUNCTION__,
 	GetColorModeName(cv->colset->col_mode),
-	cv->colset->n_colors, cv->modus, cv->std_col, cv->order );
+	cv->colset->n_colors, cv->mode, cv->std_col, cv->order );
  #endif
 
     fprintf(cv->f,
@@ -2209,10 +2243,10 @@ void ViewColorsDC ( ColorView_t *cv )
     DASSERT(cv->colset);
 
  #ifdef TEST
-    fprintf(cv->f,"%*s%s() %s, %u colors, modus %d, stdcol %d, order %d\n",
+    fprintf(cv->f,"%*s%s() %s, %u colors, mode %d, stdcol %d, order %d\n",
 	cv->indent,"", __FUNCTION__,
 	GetColorModeName(cv->colset->col_mode),
-	cv->colset->n_colors, cv->modus, cv->std_col, cv->order );
+	cv->colset->n_colors, cv->mode, cv->std_col, cv->order );
  #endif
 
     GetColorOption_t col_option = cv->col_option & ~GCM_ALT;
@@ -2268,7 +2302,7 @@ static void ViewColors256_helper
  #endif
     else
     {
-	const int mode = cv->modus & 1 ? 48 : 38;
+	const int mode = cv->mode & 1 ? 48 : 38;
 
 	uint i;
 	for ( i = beg; i < end; i += step )
@@ -2286,10 +2320,10 @@ void ViewColors256 ( ColorView_t *cv )
     DASSERT(cv->colset);
 
  #ifdef TEST
-    fprintf(cv->f,"%*s%s() %s, %u colors, modus %d, stdcol %d, order %d\n",
+    fprintf(cv->f,"%*s%s() %s, %u colors, mode %d, stdcol %d, order %d\n",
 	cv->indent,"", __FUNCTION__,
 	GetColorModeName(cv->colset->col_mode),
-	cv->colset->n_colors, cv->modus, cv->std_col, cv->order );
+	cv->colset->n_colors, cv->mode, cv->std_col, cv->order );
  #endif
 
     fprintf(cv->f,
@@ -2384,10 +2418,10 @@ void ViewColorsPredef ( ColorView_t *cv, uint mode )
     DASSERT(cv->colset);
 
  #ifdef TEST
-    fprintf(cv->f,"%*s%s() %s, %u colors, modus %d, stdcol %d, order %d\n",
+    fprintf(cv->f,"%*s%s() %s, %u colors, mode %d, stdcol %d, order %d\n",
 	cv->indent,"", __FUNCTION__,
 	GetColorModeName(cv->colset->col_mode),
-	cv->colset->n_colors, cv->modus, cv->std_col, cv->order );
+	cv->colset->n_colors, cv->mode, cv->std_col, cv->order );
  #endif
 
     fprintf(cv->f,
@@ -2405,7 +2439,7 @@ void ViewColorsPredef ( ColorView_t *cv, uint mode )
 
     if ( mode & 1 )
     {
-	const bool alt = cv->modus & 1;
+	const bool alt = cv->mode & 1;
 
 	JOB1(setup);
 	JOB1(finish);

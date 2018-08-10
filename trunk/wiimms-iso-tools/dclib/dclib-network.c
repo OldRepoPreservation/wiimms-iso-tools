@@ -14,7 +14,7 @@
  *                                                                         *
  ***************************************************************************
  *                                                                         *
- *        Copyright (c) 2012-2017 by Dirk Clemens <wiimm@wiimm.de>         *
+ *        Copyright (c) 2012-2018 by Dirk Clemens <wiimm@wiimm.de>         *
  *                                                                         *
  ***************************************************************************
  *                                                                         *
@@ -80,139 +80,8 @@ bool ResolveHost
     bool	store_name	// true: setup 'host->name'
 )
 {
- #if 1
     return ResolveHostMem( host, init_host, MemByString(name),
 				default_port, check_filename, store_name );
-
- #else // [[obsolete]] 2017-01 -> make above inline!
-
-    Setup_ConnectTCP_Hook(false);
-
-    DASSERT(host);
-    if (!init_host)
-	FREE((char*)host->name);
-    InitializeHost(host);
-    host->port = default_port;
-
-    if (check_filename)
-    {
-	host->filename = CheckUnixSocketPath(name,0);
-	if (host->filename)
-	     return false;
-    }
-
-    char buf[1000];
-
-    ccp ptr = name;
-    if ( *ptr >= 'a' && *ptr <= 'z' || *ptr >= 'A' && *ptr <= 'Z' )
-    {
-	while ( *ptr >= 'a' && *ptr <= 'z'
-	     || *ptr >= 'A' && *ptr <= 'Z'
-	     || *ptr >= '0' && *ptr <= '9'
-	     || *ptr == '_' || *ptr == '-' )
-	{
-	    ptr++;
-	}
-
-	uint len = ptr - name;
-	if ( len && len < sizeof(buf) && *ptr == ':' && ptr[1] == '/' )
-	{
-	    memcpy(buf,name,len);
-	    buf[len] = 0;
-	    struct servent *s = getservbyname(buf,0);
-	    if (s)
-	    {
-		const int port = ntohs(s->s_port);
-		if ( port > 0 )
-		    host->port = port;
-	    }
-
-	    ptr += 2;
-	    if ( *ptr == '/' )
-		ptr++;
-	    name = ptr;
-	    check_filename = false;
-	}
-	else
-	    ptr = name;
-    }
-
-    while ( *ptr >= 'a' && *ptr <= 'z'
-	 || *ptr >= 'A' && *ptr <= 'Z'
-	 || *ptr >= '0' && *ptr <= '9'
-	 || *ptr == '_' || *ptr == '-' || *ptr == '.' )
-    {
-	ptr++;
-    }
-    uint len = ptr - name;
-    if ( len > 0 && len < sizeof(buf) )
-    {
-	memcpy(buf,name,len);
-	buf[len] = 0;
-	if (store_name)
-	    host->name = MEMDUP(buf,len);
-
-	struct hostent *h = gethostbyname(buf);
-	if ( h && h->h_addrtype == AF_INET && h->h_length == 4 )
-	{
-	    host->ip4 = ntohl(*(u32*)h->h_addr_list[0]);
-	    host->ip4_valid = true;
-	}
-
-	if ( *ptr == ':' )
-	{
-	    ccp pptr = ptr+1;
-	    if ( *pptr >= '0' && *pptr <= '9' )
-	    {
-		char *end;
-		const uint port = strtoul(pptr,&end,10);
-		if ( port <= 0xffff && end > pptr )
-		{
-		    host->port = port;
-		    ptr = end;
-		}
-	    }
-	    else
-	    {
-		ccp pstart = pptr;
-		while ( *pptr >= 'a' && *pptr <= 'z'
-		     || *pptr >= 'A' && *pptr <= 'Z'
-		     || *pptr >= '0' && *pptr <= '9'
-		     || *pptr == '_' || *pptr == '-' )
-		{
-		    pptr++;
-		}
-		len = pptr - pstart;
-		if ( len > 0 && len < sizeof(buf) )
-		{
-		    memcpy(buf,pstart,len);
-		    buf[len] = 0;
-		    struct servent *s = getservbyname(buf,0);
-		    if (s)
-		    {
-			const int port = ntohs(s->s_port);
-			if ( port > 0 )
-			    host->port = port;
-			ptr = pptr;
-		    }
-		}
-	    }
-	}
-
-	host->sa.sin_family = AF_INET;
-	host->sa.sin_addr.s_addr = htonl(host->ip4);
-	host->sa.sin_port = htons(host->port);
-    }
-
-    if ( *ptr && check_filename )
-    {
-	host->filename = name;
-	host->ip4_valid = false;
-    }
-
-    host->end_scan = ptr;
-    return host->ip4_valid;
- #endif
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -2918,13 +2787,10 @@ enumError ListenTCP
     DASSERT(th);
     DASSERT(addr);
 
- #if 1
-
     Socket_t *lsock = GetUnusedListenSocketTCP(th,false);
     if (!lsock)
 	return ERR_CANT_CREATE;
 
-  #if 1
     const bool allow_unix = memcmp(addr,"tcp:",4) != 0;
     if (!allow_unix)
     {
@@ -2932,9 +2798,6 @@ enumError ListenTCP
 	while ( *addr == '/' )
 	    addr++;
     }
-  #else  // [[obsolete]]
-    const bool allow_unix = true;
-  #endif
 
     NetworkHost_t nh;
     if ( !ResolveHost(&nh,true,addr,default_port,allow_unix,true) && nh.filename )
@@ -2945,26 +2808,6 @@ enumError ListenTCP
     }
     ccp path = GetHostName(&nh);
     PRINT("LISTEN/TCP: %s:%u -> %s\n",nh.name,default_port,PrintIP4(0,0,nh.ip4,nh.port));
-
- #else // [[obsolete]]
-
-    ccp unix_path = CheckUnixSocketPath(addr,0);
-    if (unix_path)
-	return ListenUnixTCP(th,unix_path);
-
-    if (!strncasecmp(addr,"tcp:",4))
-	addr += 4;
-
-    Socket_t *lsock = GetUnusedListenSocketTCP(th,false);
-    if ( !lsock < 0 )
-	return ERR_CANT_CREATE;
-
-    NetworkHost_t nh;
-    ResolveHost(&nh,true,addr,default_port,false,true);
-    ccp path = GetHostName(&nh);
-    PRINT("LISTEN/TCP: %s:%u -> %s\n",nh.name,default_port,PrintIP4(0,0,nh.ip4,nh.port));
-
- #endif
 
     int sock = socket(AF_INET,SOCK_STREAM|SOCK_NONBLOCK,0);
     if ( sock == -1 )

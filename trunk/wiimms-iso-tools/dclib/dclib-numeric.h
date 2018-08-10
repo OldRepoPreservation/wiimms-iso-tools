@@ -14,7 +14,7 @@
  *                                                                         *
  ***************************************************************************
  *                                                                         *
- *        Copyright (c) 2012-2017 by Dirk Clemens <wiimm@wiimm.de>         *
+ *        Copyright (c) 2012-2018 by Dirk Clemens <wiimm@wiimm.de>         *
  *                                                                         *
  ***************************************************************************
  *                                                                         *
@@ -220,8 +220,8 @@ double3 * GrowD3L ( double3List_t * d3l, uint n );
 				(v).x *= l; (v).y *= l; (v).z *= l; }} while (0)
 
 #define MinMax3p(min,max,a,b,c) do { \
-	if (a<b) { min = a < c ? a : c; max = b > c ? b : c } \
-	    else { min = b < c ? b : c; max = a > c ? a : c } } while (0)
+	if (a<b) { min = a < c ? a : c; max = b > c ? b : c; } \
+	    else { min = b < c ? b : c; max = a > c ? a : c; } } while (0)
 
 //
 ///////////////////////////////////////////////////////////////////////////////
@@ -230,14 +230,16 @@ double3 * GrowD3L ( double3List_t * d3l, uint n );
 
 static inline bool IsNormalF ( float f )
 {
-    const int fpclass = fpclassify(f);
-    return fpclass == FP_NORMAL || fpclass == FP_ZERO;
+    return isfinite(f);
+//    const int fpclass = fpclassify(f);
+//    return fpclass == FP_NORMAL || fpclass == FP_ZERO;
 }
 
 static inline bool IsNormalD ( double d )
 {
-    const int fpclass = fpclassify(d);
-    return fpclass == FP_NORMAL || fpclass == FP_ZERO;
+    return isfinite(d);
+//    const int fpclass = fpclassify(d);
+//    return fpclass == FP_NORMAL || fpclass == FP_ZERO;
 }
 
 bool IsNormalF3 ( float  *f3 );
@@ -789,6 +791,20 @@ void PrintMatrixD
 				//  0x20: print all, don't suppress NULL vectors
 				//  0x40: print an additional EOL behind each section
 );
+
+//
+///////////////////////////////////////////////////////////////////////////////
+///////////////				CRC16			///////////////
+///////////////////////////////////////////////////////////////////////////////
+
+#define CRC16_CCITT_POLYNOM 0x1021
+
+void CreateCRC16Table ( u16 table[0x100], u16 polynom );
+const u16 * GetCRC16Table ( u16 polynom );
+
+u16 CalcCRC16 ( cvp data, uint data_size, u16 polynom, u16 preset );
+static inline u16 CalcCRC16CCITT ( cvp data, uint data_size )
+	{ return CalcCRC16(data,data_size,CRC16_CCITT_POLYNOM,0); }
 
 //
 ///////////////////////////////////////////////////////////////////////////////

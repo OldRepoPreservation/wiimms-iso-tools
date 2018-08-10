@@ -14,7 +14,7 @@
  *                                                                         *
  ***************************************************************************
  *                                                                         *
- *        Copyright (c) 2012-2017 by Dirk Clemens <wiimm@wiimm.de>         *
+ *        Copyright (c) 2012-2018 by Dirk Clemens <wiimm@wiimm.de>         *
  *                                                                         *
  ***************************************************************************
  *                                                                         *
@@ -328,14 +328,14 @@ typedef struct bmg_item_t
     u16		len;			// length in u16 words of 'text'
     u16		alloced_size;		// alloced size in u16 words of 'text'
 					// if 0: pointer to an other area
-					//       ==> do not free()
+					//       ==> do not free or modify
 }
 __attribute__ ((packed)) bmg_item_t;
 
 //-----------------------------------------------------------------------------
 
 // special value for bmg_item_t::text
-extern u16 bmg_null_entry[];		// ID set, but no string link
+extern u16 bmg_null_entry[];		// = {0}
 
 void FreeItemBMG( bmg_item_t * bi );
 
@@ -642,6 +642,10 @@ bool PatchRmEscapesBMG
     bool		unicode,	// replace '\u{16bit}' by unicode chars
     bool		rm_escapes	// remove 1A escapes
 );
+
+// remove between mid1 and mid2-1
+bool PatchRemoveBMG ( bmg_t * bmg, int mid1, int mid2 );
+//bool PatchRemoveTracksBMG ( bmg_t * bmg, int track_limit );
 
 //-----------------------------------------------------------------------------
 

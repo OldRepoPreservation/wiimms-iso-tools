@@ -396,6 +396,7 @@ enumError SourceIteratorWarning ( Iterator_t * it, enumError max_err, bool silen
 extern bool allow_fst;		// FST diabled by default
 extern bool ignore_setup;	// ignore file 'setup.txt' while composing
 extern bool opt_links;		// find linked files and create hard links
+extern bool opt_user_bin;	// enable management of "sys/user.bin"
 
 extern wd_select_t part_selector;
 
@@ -539,7 +540,7 @@ void DumpFileIndex ( FILE *f, int indent, const FileIndex_t * fidx );
 ///////////////			    Wii FST			///////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-// search and load 'sys/fst+.bin'
+// search and load 'sys/fst+.bin'  =>  0=off, 1=readonly, 2=read+create
 #define SUPPORT_FST_PLUS	0
 
 #define FST_SETUP_FILE		"setup.txt"

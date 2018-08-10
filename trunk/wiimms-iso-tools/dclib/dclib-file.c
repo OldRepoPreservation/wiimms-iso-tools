@@ -14,7 +14,7 @@
  *                                                                         *
  ***************************************************************************
  *                                                                         *
- *        Copyright (c) 2012-2017 by Dirk Clemens <wiimm@wiimm.de>         *
+ *        Copyright (c) 2012-2018 by Dirk Clemens <wiimm@wiimm.de>         *
  *                                                                         *
  ***************************************************************************
  *                                                                         *
@@ -3348,49 +3348,8 @@ ccp CheckUnixSocketPath
 			    //  2: not 'NAME:'
 )
 {
- #if 1
     mem_t res = CheckUnixSocketPathMem(MemByString(src),tolerance);
     return res.ptr;
- #else // [[obsolete]] 2017-01
-    if (src)
-    {
-	switch (*src)
-	{
-	    case '/':
-		return src;
-
-	    case '.':
-		{
-		    ccp s = src+1;
-		    if ( *s == '.' )
-			s++;
-		    if ( *s == '/' )
-			return src;
-		}
-		break;
-
-	    case 'f':
-		if (!memcmp(src,"file:",5))
-		    return src+5;
-
-	    case 'u':
-		if (!memcmp(src,"unix:",5))
-		    return src+5;
-	    break;
-	}
-
-	if ( tolerance > 0 )
-	{
-	    ccp ptr = src;
-	    while ( isalnum((int)*ptr) )
-		ptr++;
-	    if ( *ptr != ':' && ( tolerance > 1 || strchr(ptr,'/')) )
-		return src;
-	}
-    }
-
-    return 0;
- #endif
 }
 
 //

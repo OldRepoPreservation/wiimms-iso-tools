@@ -14,7 +14,7 @@
  *                                                                         *
  ***************************************************************************
  *                                                                         *
- *        Copyright (c) 2012-2017 by Dirk Clemens <wiimm@wiimm.de>         *
+ *        Copyright (c) 2012-2018 by Dirk Clemens <wiimm@wiimm.de>         *
  *                                                                         *
  ***************************************************************************
  *                                                                         *
@@ -532,7 +532,7 @@ typedef struct ColorView_t
     TermColorIndex_t	std_col;	// standard bg or fg color, TCI__IGNORE allowed
     int			order;		// 0|'r' | 1|'g' | 2|'b'
     GetColorOption_t	col_option;	// color option
-    uint		modus;		// function specific modus (modulo 60)
+    uint		mode;		// function specific mode (modulo 60)
 
     void		*user_ptr;	// any pointer
     int			user_int;	// any number or id

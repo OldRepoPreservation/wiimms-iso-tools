@@ -14,7 +14,7 @@
  *                                                                         *
  ***************************************************************************
  *                                                                         *
- *        Copyright (c) 2012-2017 by Dirk Clemens <wiimm@wiimm.de>         *
+ *        Copyright (c) 2012-2018 by Dirk Clemens <wiimm@wiimm.de>         *
  *                                                                         *
  ***************************************************************************
  *                                                                         *
@@ -524,7 +524,7 @@ char * PathCatBufPP ( char * buf, size_t bufsize, ccp path1, ccp path2 )
 
     DASSERT(buf);
     DASSERT(bufsize);
-    
+
     if ( !path1 || !*path1 )
     {
 	if (path2)
@@ -3504,6 +3504,46 @@ char * MatchRuleLine
 ///////////////			scan keywords			///////////////
 ///////////////////////////////////////////////////////////////////////////////
 
+const KeywordTab_t *GetKewordById
+(
+    const KeywordTab_t	*key_tab,	// NULL or pointer to command table
+    s64			id		// id to search
+)
+{
+    if (key_tab)
+    {
+	const KeywordTab_t *key;
+	for ( key = key_tab; *key->name1; key++ )
+	    if ( key->id == id )
+		return key;
+    }
+
+    return 0;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+const KeywordTab_t *GetKewordByIdAndOpt
+(
+    const KeywordTab_t	*key_tab,	// NULL or pointer to command table
+    s64			id,		// id to search
+    s64			opt		// opt to search
+)
+{
+    if (key_tab)
+    {
+	const KeywordTab_t *key;
+	for ( key = key_tab; *key->name1; key++ )
+	    if ( key->id == id && key->opt == opt )
+		return key;
+    }
+
+    return 0;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
 const KeywordTab_t * ScanKeyword
 (
     int			* res_abbrev,	// NULL or pointer to result 'abbrev_count'
@@ -3997,7 +4037,7 @@ int ScanKeywordOffOn
     if ( max_num > 0 )
     {
 	char *end;
-	uint num = str2ul(arg,&end,10);
+	const uint num = str2ul(arg,&end,10);
 	if ( !*end && num <= max_num )
 	    return num;
     }
@@ -4006,6 +4046,56 @@ int ScanKeywordOffOn
 	PrintKeywordError(keytab,arg,status,0,object);
 
     return -2;
+}
+
+//
+///////////////////////////////////////////////////////////////////////////////
+///////////////			OFF/AUTO/ON/FORCE		///////////////
+///////////////////////////////////////////////////////////////////////////////
+
+const KeywordTab_t KeyTab_OFF_AUTO_ON[] =
+{
+  { OFFON_OFF,		"OFF",		"-1",	0 },
+  { OFFON_OFF,		"DISABLED",	0,	0 },
+  { OFFON_AUTO,		"AUTO",		"0",	0 },
+  { OFFON_ON,		"ON",		"1",	0 },
+  { OFFON_ON,		"ENABLED",	0,	0 },
+  { OFFON_FORCE,	"FORCE",	"2",	0 },
+  { 0,0,0,0 }
+};
+
+//-----------------------------------------------------------------------------
+
+int ScanKeywordOffAutoOn
+(
+    // returns one of OFFON_* (OFFON_ON on empty argument)
+
+    ccp			arg,		// argument to scan
+    int			on_empty,	// return this value on empty
+    uint		max_num,	// >0: additionally accept+return number <= max_num
+    ccp			object		// NULL (silent) or object for error messages
+)
+{
+    if ( !arg || !*arg )
+	return on_empty;
+
+    int status;
+    const KeywordTab_t *key = ScanKeyword(&status,arg,KeyTab_OFF_AUTO_ON);
+    if (key)
+	return key->id;
+
+    if ( max_num > 0 )
+    {
+	char *end;
+	const int num = str2l(arg,&end,10);
+	if ( !*end && num >= OFFON_OFF && num <= max_num )
+	    return num;
+    }
+
+    if (object)
+	PrintKeywordError(KeyTab_OFF_AUTO_ON,arg,status,0,object);
+
+    return OFFON_ERROR;
 }
 
 //
