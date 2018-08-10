@@ -14,7 +14,7 @@
  *                                                                         *
  ***************************************************************************
  *                                                                         *
- *        Copyright (c) 2012-2017 by Dirk Clemens <wiimm@wiimm.de>         *
+ *        Copyright (c) 2012-2018 by Dirk Clemens <wiimm@wiimm.de>         *
  *                                                                         *
  ***************************************************************************
  *                                                                         *
@@ -54,6 +54,16 @@
 #include "dclib-debug.h"
 #include "dclib-color.h"
 #include "dclib-numeric.h"
+
+//
+///////////////////////////////////////////////////////////////////////////////
+///////////////			    helpers			///////////////
+///////////////////////////////////////////////////////////////////////////////
+
+#define SIZEOFMEMBER(type,a) sizeof(((type*)0)->a)
+
+#define SIZEOFRANGE(type,a,b) \
+	( offsetof(type,b) + sizeof(((type*)0)->b) - offsetof(type,a) )
 
 //
 ///////////////////////////////////////////////////////////////////////////////
@@ -2020,6 +2030,21 @@ typedef s64 (*KeywordCallbackFunc)
 
 ///////////////////////////////////////////////////////////////////////////////
 
+const KeywordTab_t *GetKewordById
+(
+    const KeywordTab_t	*key_tab,	// NULL or pointer to command table
+    s64			id		// id to search
+);
+
+const KeywordTab_t *GetKewordByIdAndOpt
+(
+    const KeywordTab_t	*key_tab,	// NULL or pointer to command table
+    s64			id,		// id to search
+    s64			opt		// opt to search
+);
+
+///////////////////////////////////////////////////////////////////////////////
+
 const KeywordTab_t * ScanKeyword
 (
     int			*res_abbrev,	// NULL or pointer to result 'abbrev_count'
@@ -2147,7 +2172,33 @@ enumError Command_COLORS
     uint	format		// output format => see PrintColorSetEx()
 );
 
-//
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////			OFF/AUTO/ON/FORCE		///////////////
+///////////////////////////////////////////////////////////////////////////////
+
+enum OffOn_t
+{
+    OFFON_ERROR	= -999,
+    OFFON_OFF	=   -1,
+    OFFON_AUTO	=    0,
+    OFFON_ON	=    1,
+    OFFON_FORCE	=    2,
+};
+
+extern const KeywordTab_t KeyTab_OFF_AUTO_ON[];
+
+int ScanKeywordOffAutoOn
+(
+    // returns one of OFFON_* (OFFON_ON on empty argument)
+
+    ccp			arg,		// argument to scan
+    int			on_empty,	// return this value on empty
+    uint		max_num,	// >0: additionally accept+return number <= max_num
+    ccp			object		// NULL (silent) or object for error messages
+);
+
+////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////			scan command lists		///////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -2428,6 +2479,13 @@ typedef enum sizeform_mode_t
     DC_SFORM_TINY	= DC_SFORM_NARROW | DC_SFORM_UNIT1,
 }
 sizeform_mode_t;
+
+///////////////////////////////////////////////////////////////////////////////
+
+float  RoundF2bytes ( float f );
+float  RoundF3bytes ( float f );
+double RoundD6bytes ( double d );
+double RoundD7bytes ( double d );
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -2819,12 +2877,13 @@ extern s64 timezone_adjust_sec;
 extern s64 timezone_adjust_usec;
 
 void SetupTimezone ( bool force );
-u64  GetTimeSec ( bool localtime );
-u64  GetTimeMSec ( bool localtime );
-u64  GetTimeUSec ( bool localtime );
 
-u32 GetTimerMSec();
-u64 GetTimerUSec();
+u_sec_t  GetTimeSec  ( bool localtime );
+u_msec_t GetTimeMSec ( bool localtime );
+u_usec_t GetTimeUSec ( bool localtime );
+
+u_msec_t GetTimerMSec();
+u_usec_t GetTimerUSec();
 
 static inline u64 double2msec ( double d ) { return d>0.0 ? (u64)trunc( 1e3*d+0.5 ) : 0; }
 static inline u64 double2usec ( double d ) { return d>0.0 ? (u64)trunc( 1e6*d+0.5 ) : 0; }
@@ -3822,7 +3881,7 @@ typedef struct RestoreState_t
     cvp			user_param;	// pointer provided as parameter by user
     cvp			user_info;	// pointer to deliver insfos between stages
 
-    RestoreStateLog_t	log_mode;	// log modus
+    RestoreStateLog_t	log_mode;	// log mode
     FILE		*log_file;	// log file
 
 }

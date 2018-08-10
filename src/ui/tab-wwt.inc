@@ -444,6 +444,9 @@
   { T_OPT_C,	"LINKS",	"links",
 		0, 0 /* copy of wit */ },
 
+  { H_OPT_C,	"USER_BIN",	"user-bin|userbin",
+		0, 0 /* copy of wit */ },
+
   { T_SEP_OPT,	0,0,0,0 }, //----- separator -----
 
   { T_OPT_CP,	"PMODE",	"pmode",
@@ -813,6 +816,7 @@
   { T_COPT,	"IGNORE_FST",	0,0,0 },
   { T_COPT,	"IGNORE_SETUP",	0,0,0 },
   { T_COPT,	"LINKS",	0,0,0 },
+  { H_COPT,	"USER_BIN",	0,0,0 },
 
   //---------- wwt GROUP EXCLUDE ----------
 
@@ -1387,6 +1391,7 @@
   { T_COPY_GRP,	"OUTMODE",	0,0,0 },
   { T_COPY_GRP,	"FST_SELECT",	0,0,0 },
   { T_COPT,	"LINKS",	0,0,0 },
+  { H_COPT,	"USER_BIN",	0,0,0 },
 
   { T_SEP_OPT,	0,0,0,0 },
 

@@ -14,7 +14,7 @@
  *                                                                         *
  ***************************************************************************
  *                                                                         *
- *        Copyright (c) 2012-2017 by Dirk Clemens <wiimm@wiimm.de>         *
+ *        Copyright (c) 2012-2018 by Dirk Clemens <wiimm@wiimm.de>         *
  *                                                                         *
  ***************************************************************************
  *                                                                         *
@@ -938,7 +938,7 @@ void HexDiff ( FILE * f, int indent, u64 addr, int addr_fw, int row_len,
 ///////////////			 trace functions		///////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-unsigned GetTimerMSec();
+u_msec_t GetTimerMSec();
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -1102,6 +1102,58 @@ void WAIT_FUNC ( ccp format, ... )
 void dclib_free ( void * ptr )
 {
     free(ptr);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+void * dclib_xcalloc ( size_t nmemb, size_t size )
+{
+    void * res = calloc(nmemb,size);
+    if (!res)
+	PrintError(__FUNCTION__,__FILE__,__LINE__,0,ERR_OUT_OF_MEMORY,
+		"Out of memory while calloc() %zu bytes (%zu*%zu=0x%zx)\n",
+		nmemb*size, nmemb, size, nmemb*size );
+    return res;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void * dclib_xmalloc ( size_t size )
+{
+    void * res = malloc(size);
+    if (!res)
+	PrintError(__FUNCTION__,__FILE__,__LINE__,0,ERR_OUT_OF_MEMORY,
+		"Out of memory while malloc() %zu bytes (0x%zx)\n",
+		size, size );
+    return res;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void * dclib_xrealloc ( void * ptr, size_t size )
+{
+    void * res = realloc(ptr,size);
+    if ( !res && size )
+	PrintError(__FUNCTION__,__FILE__,__LINE__,0,ERR_OUT_OF_MEMORY,
+		"Out of memory while realloc() %zu bytes (0x%zx)\n",
+		size, size );
+    return res;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+char * dclib_xstrdup  ( ccp src )
+{
+    char * res = strdup(src?src:"");
+    if (!res)
+    {
+	const uint size = src ? strlen(src)+1 : 0;
+	PrintError(__FUNCTION__,__FILE__,__LINE__,0,ERR_OUT_OF_MEMORY,
+		"Out of memory while strdup() %u bytes (0x%x)\n",
+		size, size );
+    }
+    return res;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

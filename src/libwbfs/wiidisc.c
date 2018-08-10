@@ -2305,7 +2305,7 @@ enumError wd_load_part
 	//----- calculate size of apploader.img
 
 	{
-	    u8 * apl_header = (u8*) disc->temp_buf;
+	    u8 *apl_header = (u8*)disc->temp_buf;
 	    const u32 apl_off4 = part->is_gc ? WII_APL_OFF : WII_APL_OFF >> 2;
 	    err = wd_read_part(part,apl_off4,apl_header,0x20,false);
 	    if (err)
@@ -2322,6 +2322,27 @@ enumError wd_load_part
 
 	    wd_mark_part(part,WII_APL_OFF>>2,part->apl_size);
 	}
+
+
+	//----- calculate offset and size of user.bin
+
+ #if SUPPORT_USER_BIN > 0
+	{
+	    const u32 off = ALIGN32( WII_APL_OFF + part->apl_size, WIIUSER_DATA_ALIGN );
+	    noPRINT(">>> user.bin offset: %x\n",off);
+
+	    wiiuser_header_t *wuh = (wiiuser_header_t*)disc->temp_buf;
+	    err = wd_read_part(part,off>>2,wuh,sizeof(*wuh),false);
+	    if ( !err && !memcmp(wuh->magic,WIIUSER_MAGIC,sizeof(wuh->magic)) )
+	    {
+		noPRINT(">>> user.bin FOUND! vers=%u, size=%x\n",
+			ntohl(wuh->version), ntohl(wuh->size) );
+		part->ubin_off4 = ( off + sizeof(wiiuser_header_t) ) >> 2;
+		part->ubin_size = ntohl(wuh->size);
+		wd_mark_part(part,part->ubin_off4,part->ubin_size);
+	    }
+	}
+ #endif
 
 
 	//----- load and iterate fst
@@ -3630,6 +3651,26 @@ static int wd_iterate_fst_helper
 		else if (stat)
 		    return stat;
 	    }
+
+	 #if SUPPORT_USER_BIN > 0
+	    if ( sys_files->ubin_off4 && sys_files->ubin_size )
+	    {
+		DASSERT( it->icm == WD_ICM_FILE );
+		DASSERT(!it->data);
+
+		it->off4 = sys_files->ubin_off4;
+		it->size = sys_files->ubin_size;
+		strcpy(it->fst_name,"sys/user.bin");
+		stat = func(it);
+		if ( stat == 1 && exec_func )
+		{
+		    mod = 1;
+		    exec_func(it);
+		}
+		else if (stat)
+		    return stat;
+	    }
+	 #endif
 
 // [[2do]] [[fst+]]
 	    DASSERT( it->icm == WD_ICM_FILE );

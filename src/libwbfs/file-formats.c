@@ -92,6 +92,7 @@ int validate_file_format_sizes ( int trace_sizes )
 	TRACE_SIZEOF(wpat_toc_header_t);
 	TRACE_SIZEOF(wpat_type_t);
 
+	TRACE_SIZEOF(wiiuser_header_t);
 
      #ifdef DEBUG
 	wd_part_control_t pc, pc_saved;
@@ -149,6 +150,11 @@ int validate_file_format_sizes ( int trace_sizes )
     CHECK( sizeof(wd_tmd_content_t)	== 0x24 );
     CHECK( sizeof(wd_tmd_t) + sizeof(wd_tmd_content_t) == WII_TMD_GOOD_SIZE );
 
+    CHECK( sizeof(wiiuser_header_t)	== WIIUSER_HEAD_SIZE );
+
+    // >>> copy to below
+
+
     //----- 3. calculate return value
 
     #undef  CHECK
@@ -187,6 +193,8 @@ int validate_file_format_sizes ( int trace_sizes )
     CHECK( sizeof(wd_tmd_t)		== 0x1e4 );
     CHECK( sizeof(wd_tmd_content_t)	== 0x24 );
     CHECK( sizeof(wd_tmd_t) + sizeof(wd_tmd_content_t) == WII_TMD_GOOD_SIZE );
+
+    CHECK( sizeof(wiiuser_header_t)	== WIIUSER_HEAD_SIZE );
 
     return 0;
 }

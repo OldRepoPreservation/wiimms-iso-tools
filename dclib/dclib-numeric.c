@@ -14,7 +14,7 @@
  *                                                                         *
  ***************************************************************************
  *                                                                         *
- *        Copyright (c) 2012-2017 by Dirk Clemens <wiimm@wiimm.de>         *
+ *        Copyright (c) 2012-2018 by Dirk Clemens <wiimm@wiimm.de>         *
  *                                                                         *
  ***************************************************************************
  *                                                                         *
@@ -1629,7 +1629,7 @@ void SetupTimezone ( bool force )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-u64 GetTimeSec ( bool localtime )
+u_sec_t GetTimeSec ( bool localtime )
 {
     struct timeval tval;
     gettimeofday(&tval,NULL);
@@ -1640,7 +1640,7 @@ u64 GetTimeSec ( bool localtime )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-u64 GetTimeMSec ( bool localtime )
+u_msec_t GetTimeMSec ( bool localtime )
 {
     struct timeval tval;
     gettimeofday(&tval,NULL);
@@ -1651,7 +1651,7 @@ u64 GetTimeMSec ( bool localtime )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-u64 GetTimeUSec ( bool localtime )
+u_usec_t GetTimeUSec ( bool localtime )
 {
     struct timeval tval;
     gettimeofday(&tval,NULL);
@@ -1669,26 +1669,26 @@ static time_t time_base = 0;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-u32 GetTimerMSec()
+u_msec_t GetTimerMSec()
 {
     struct timeval tval;
     gettimeofday(&tval,NULL);
     if (!time_base)
 	time_base = tval.tv_sec;
 
-    return ( tval.tv_sec - time_base ) * 1000 + tval.tv_usec/1000;
+    return (u_msec_t)( tval.tv_sec - time_base ) * 1000 + tval.tv_usec/1000;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-u64 GetTimerUSec()
+u_usec_t GetTimerUSec()
 {
     struct timeval tval;
     gettimeofday(&tval,NULL);
     if (!time_base)
 	time_base = tval.tv_sec;
 
-    return (u64)( tval.tv_sec - time_base ) * 1000000 + tval.tv_usec;
+    return (u_usec_t)( tval.tv_sec - time_base ) * 1000000 + tval.tv_usec;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -3159,6 +3159,81 @@ unsigned long long int str2ull ( const char *nptr, char **endptr, int base )
     if (endptr)
 	*endptr = end;
     return res;
+}
+
+//
+///////////////////////////////////////////////////////////////////////////////
+///////////////		round float/double (zero LSB)		///////////////
+///////////////////////////////////////////////////////////////////////////////
+
+float RoundF2bytes ( float f )
+{
+    union { float f; u32 u; } x;
+    x.f = f;
+    if ( x.u & 0x8000 )
+    {
+	x.u &= 0xffff0000;
+	int exp;
+	const float frac = frexpf(x.f,&exp);
+	x.f = ldexpf(frac+0.00585938,exp);
+    }
+    
+    x.u &= 0xffff0000;
+    return x.f;
+}
+
+//-----------------------------------------------------------------------------
+
+float RoundF3bytes ( float f )
+{
+    union { float f; u32 u; } x;
+    x.f = f;
+    if ( x.u & 0x80 )
+    {
+	x.u &= 0xffffff00;
+	int exp;
+	const float frac = frexpf(x.f,&exp);
+	x.f = ldexpf(frac+0.00002289,exp);
+    }
+    
+    x.u &= 0xffffff00;
+    return x.f;
+}
+
+//-----------------------------------------------------------------------------
+
+double RoundD6bytes ( double d )
+{
+    union { double d; u64 u; } x;
+    x.d = d;
+    if ( x.u & 0x8000 )
+    {
+	x.u &= 0xffffffffffff0000ull;
+	int exp;
+	const double frac = frexp(x.d,&exp);
+	x.d = ldexp(frac+0.000000000010913936,exp);
+    }
+    
+    x.u &= 0xffffffffffff0000ull;
+    return x.d;
+}
+
+//-----------------------------------------------------------------------------
+
+double RoundD7bytes ( double d )
+{
+    union { double d; u64 u; } x;
+    x.d = d;
+    if ( x.u & 0x80 )
+    {
+	x.u &= 0xffffffffffffff00ull;
+	int exp;
+	const double frac = frexp(x.d,&exp);
+	x.d = ldexp(frac+0.000000000000042633,exp);
+    }
+    
+    x.u &= 0xffffffffffffff00ull;
+    return x.d;
 }
 
 //
@@ -5286,6 +5361,62 @@ char * PrintAlignedIP4
 	snprintf(buf,buf_size,"%3u.%3u.%3u.%3u",
 		addr[0], addr[1], addr[2], addr[3] );
     return buf;
+}
+
+//
+///////////////////////////////////////////////////////////////////////////////
+///////////////				CRC16			///////////////
+///////////////////////////////////////////////////////////////////////////////
+
+void CreateCRC16Table ( u16 table[0x100], u16 polynom )
+{
+    int i, j;
+    for ( i = 0; i < 256; i++ )
+    {
+	u16 val = i << 8;
+	for ( j = 0; j < 8; j++ )
+	{
+	    if ( val & 0x8000 )
+		val = val << 1 ^ polynom;
+	    else
+		val <<= 1;
+	}
+	table[i] = val;
+    }
+}
+
+//-----------------------------------------------------------------------------
+
+const u16 * GetCRC16Table ( u16 polynom )
+{
+    static u16 *table = 0;
+    static u16 active_polynom = 0;
+
+    if ( !table || active_polynom != polynom )
+    {
+	if (!table)
+	    table = MALLOC(sizeof(u16)*0x100);
+	CreateCRC16Table(table,polynom);
+	active_polynom = polynom;
+    }
+    return table;    
+}
+
+//-----------------------------------------------------------------------------
+
+u16 CalcCRC16 ( cvp data, uint data_size, u16 polynom, u16 preset )
+{
+    DASSERT( data || !data_size );
+
+    register u16 crc = preset;
+    if ( data_size > 0 )
+    {
+	const u16 *table = GetCRC16Table(polynom);
+	const u8 *ptr = data;
+	while ( data_size-- > 0 )
+	    crc = table[ ( *ptr++ ^ crc >> 8 ) & 0xff ] ^ crc << 8;
+    }
+    return crc;
 }
 
 //

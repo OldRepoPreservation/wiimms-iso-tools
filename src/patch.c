@@ -348,6 +348,12 @@ ccp opt_domain = 0;
 static const char nin_wifi_net[] = "nintendowifi.net";
 static uint nin_wifi_net_len = sizeof(nin_wifi_net) - 1;
 
+static const char gamespy_com[] = "gamespy.com";
+static uint gamespy_com_len = sizeof(gamespy_com) - 1;
+
+static const char sake_gamespy_com[] = "sake.gamespy.com";
+static uint sake_gamespy_com_len = sizeof(sake_gamespy_com) - 1;
+
 ///////////////////////////////////////////////////////////////////////////////
 // [[domain]]
 
@@ -377,18 +383,35 @@ static uint patch_main_helper ( u8 *data, uint size, ccp title )
     uint stat = 0;
     char *end = (char*)data + size;
 
+    char *next_n = 0, *update_n = (char*)data+1;
     char *next_h = memchr(data+1,'h',size-1);
     if (!next_h)
 	next_h = end;
 
-    char *next_n = memchr(data+1,'n',size-1);
-    if (!next_n)
-	next_n = end;
-
-    while ( next_h < end || next_n < end )
+    for(;;)
     {
-      ccp found = 0, info = 0;
+      if (update_n)
+      {
+        if ( update_n < end )
+        {
+	    // search for 'nintendowifi.net'
+	    next_n = memchr(update_n,'n',end-update_n);
+	    if (!next_n)
+		next_n = end;
 
+	    // search for 'gamespy.com'
+	    char *next_g = memchr(update_n,'g',end-update_n);
+	    if ( next_g && next_g < next_n )
+		next_n = next_g;
+	}
+	else
+	    next_n = end;
+	update_n = 0;
+      }
+      if ( next_h >= end && next_n >= end )
+	break;
+
+      ccp found = 0, info = 0;
       if ( next_h < next_n )
       {
 	if ( opt_http && !memcmp(next_h,"https",5) )
@@ -416,12 +439,7 @@ static uint patch_main_helper ( u8 *data, uint size, ccp title )
 		    *dest++ = 0;
 
 		if ( next_n < next_h )
-		{
-		    // recalc next_n, because position moved
-		    next_n = memchr(found,'n',end-found);
-		    if (!next_n)
-			next_n = end;
-		}
+		    update_n = (char*)found; // recalc next_n, because position moved
 	    }
 	}
 
@@ -451,20 +469,43 @@ static uint patch_main_helper ( u8 *data, uint size, ccp title )
 		    *dest++ = 0;
 	    }
 	}
+	else if ( opt_domain
+		&& !memcmp(next_n-5,sake_gamespy_com,sake_gamespy_com_len) )
+	{
+	    const char ch = next_n[gamespy_com_len];
+	    if ( !ch || ch == '/' )
+	    {
+		if ( strlen(opt_domain) > gamespy_com_len )
+		{
+		    static int count = 0;
+		    if (!count++)
+			ERROR0(ERR_WARNING,"Can't replace '%s' by '%s': to long\n",
+					gamespy_com, opt_domain );
+		}
+		else
+		{
+		    stat |= 2;
+		    found = next_n;
+		    info  = "DOMAIN:";
 
-	next_n++;
-	next_n = memchr(next_n,'n',end-next_n);
-	if (!next_n)
-	    next_n = end;
+		    char *dest = StringCopyS(next_n,gamespy_com_len,opt_domain);
+		    next_n += gamespy_com_len;
+		    while (*next_n)
+			*dest++ = *next_n++;
+		    while ( dest < next_n )
+			*dest++ = 0;
+		}
+	    }
+	}
+	update_n = next_n + 1;
       }
-
       if ( found && verbose > 2 )
       {
 	ccp beg = found - 1;
 	while ( *beg > ' ' && *beg < 0x7f )
 	    beg--;
 	beg++;
-	printf("PATCHED %s/%-7s %6x  %s\n",title,info,(int)(beg-(ccp)data),beg);
+	fprintf(stderr,"PATCHED %s/%-7s %6x  %s\n",title,info,(int)(beg-(ccp)data),beg);
       }
     }
 

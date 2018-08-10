@@ -739,7 +739,7 @@ typedef struct wd_tmd_t
   /* 0x18c */	u8  title_id[8];
   /* 0x194 */	u32 title_type;
   /* 0x198 */	u16 group_id;
-  /* 0x19a */	u8  fake_sign[0x3e]; 	// padding => place of fake signing
+  /* 0x19a */	u8  fake_sign[0x3e];	// padding => place of fake signing
   /* 0x1d8 */	u32 access_rights;
   /* 0x1dc */	u16 title_version;
   /* 0x1de */	u16 n_content;
@@ -1105,11 +1105,31 @@ __attribute__ ((packed)) wpat_toc_header_t;
 typedef struct wpat_toc_file_t
 {
     /* 0x00 */	wpat_size_t	type_size;	// type (WPAT_F_TOC set) and record size
-    /* 0x04 */	u32		item_offset4;	// file offset/4 of file item
+    /* 0x08 */	u32		item_offset4;	// file offset/4 of file item
     /* 0x0c */	char		fname[0];	// filename, size always multiple of 4
 						// informative only
 }
 __attribute__ ((packed)) wpat_toc_file_t;
+
+//
+///////////////////////////////////////////////////////////////////////////////
+///////////////			struct wiiuser_header_t		///////////////
+///////////////////////////////////////////////////////////////////////////////
+// [[wiiuser_header_t]]
+
+#define WIIUSER_MAGIC		"USER.BIN"
+#define WIIUSER_VERSION		1
+#define WIIUSER_HEAD_SIZE	0x10
+#define WIIUSER_DATA_ALIGN	0x04
+
+typedef struct wiiuser_header_t
+{
+    /* 0x00 */	char		magic[8];	// = WIIUSER_MAGIC
+    /* 0x08 */	u32		version;	// = WIIUSER_VERSION
+    /* 0x0c */	u32		size;		// size of following data
+    /* 0x10 */	u8 *		data[0];	// binary data == user.bin
+}
+__attribute__ ((packed)) wiiuser_header_t;
 
 //
 ///////////////////////////////////////////////////////////////////////////////

@@ -45,8 +45,8 @@ WDF_LONG		= Wiimms WDF Tool
 WFUSE_SHORT		= wfuse
 WFUSE_LONG		= Wiimms FUSE Tool
 
-VERSION_NUM		= 3.01a
-BETA_VERSION		= 0
+VERSION_NUM		= 3.02a
+BETA_VERSION		= 2
 			# 0:off  -1:"beta"  >0:"beta#"
 
 URI_HOME		= https://wit.wiimm.de/
@@ -503,14 +503,14 @@ clean:
 	@rm -fr $(DISTRIB_RM)*
 	@cd dclib && rm -f $(DCLIB_PRIVATE)
 
-.PHONY : clean+
-clean+: clean
+.PHONY : c+ clean+
+c+ clean+: clean
 	@printf "$(LOGFORMAT)" rm "test files + template output" ""
 	@rm -f $(RM_FILES2)
 	-@rm -fr doc
 
-.PHONY : clean++
-clean++: clean+
+.PHONY : c++ clean++
+c++ clean++: clean+
 	@test -d .svn && svn st | sort -k2 || true
 
 #

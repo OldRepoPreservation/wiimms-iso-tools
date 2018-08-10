@@ -14,7 +14,7 @@
  *                                                                         *
  ***************************************************************************
  *                                                                         *
- *        Copyright (c) 2012-2017 by Dirk Clemens <wiimm@wiimm.de>         *
+ *        Copyright (c) 2012-2018 by Dirk Clemens <wiimm@wiimm.de>         *
  *                                                                         *
  ***************************************************************************
  *                                                                         *
@@ -140,7 +140,7 @@ typedef struct XDump_t
     bool		print_addr;	// print address field
     bool		print_number;	// print number field
     bool		print_text;	// print ascii text field
-    bool		print_summary;	// print a summary et end of dump
+    bool		print_summary;	// print a summary at end of dump
     bool		print_diff_sep;	// print an empty line after differ lines
 
     bool		have_trigger;	// true: trigger is active

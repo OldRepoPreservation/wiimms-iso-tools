@@ -14,7 +14,7 @@
  *                                                                         *
  ***************************************************************************
  *                                                                         *
- *        Copyright (c) 2012-2017 by Dirk Clemens <wiimm@wiimm.de>         *
+ *        Copyright (c) 2012-2018 by Dirk Clemens <wiimm@wiimm.de>         *
  *                                                                         *
  ***************************************************************************
  *                                                                         *
@@ -705,7 +705,7 @@ static u16 * ScanRange16U32
 ///////////////////////////////////////////////////////////////////////////////
 
 // special value for bmg_item_t::text
-u16 bmg_null_entry[] = {0};		// ID set, but no string link
+u16 bmg_null_entry[] = {0};
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -718,7 +718,7 @@ void FreeItemBMG( bmg_item_t * bi )
 	    FREE( bi->text);
 	bi->text = bmg_null_entry;
     }
-    bi->len = bi->alloced_size  = 0;
+    bi->len = bi->alloced_size = 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -2403,8 +2403,8 @@ enumError SaveTextBMG
       "#     <<<  Don't remove them!\r\n"
       "#\r\n"
       "# Details about BMG text files are available in the Web:\r\n"
-      "#  * Syntax and Semantics: http://szs.wiimm.de/doc/bmg/text\r\n"
-      "#  * The BMG file format:  http://szs.wiimm.de/r/wiki/BMG\r\n"
+      "#  * Syntax and Semantics: https://szs.wiimm.de/doc/bmg/text\r\n"
+      "#  * The BMG file format:  https://szs.wiimm.de/r/wiki/BMG\r\n"
       "#\r\n"
       "#------------------------------------------------------------------------------\r\n"
     };
@@ -3750,6 +3750,32 @@ bool PatchCtFillBMG
 			: snprintf(buf,sizeof(buf),"Cup %02X",mid-MID_CT_CUP_BEG);
 		AssignItemTextBMG(dptr,buf,len);
 	    }
+	}
+    }
+    return dirty;
+}
+
+//
+///////////////////////////////////////////////////////////////////////////////
+///////////////			PatchRemove*BMG()		///////////////
+///////////////////////////////////////////////////////////////////////////////
+
+bool PatchRemoveBMG ( bmg_t * bmg, int mid1, int mid2 )
+{
+    DASSERT(bmg);
+
+    bmg_item_t * ptr = bmg->item;
+    bmg_item_t * end = ptr + bmg->item_used;
+
+    bool dirty = false;
+    for ( ; ptr < end && ptr->mid < mid2; ptr++ )
+    {
+	if ( ptr->mid >= mid1 )
+	{
+	    FreeItemBMG(ptr);
+	    ptr->text = 0;
+	    reset_attrib(bmg,ptr);
+	    dirty = true;
 	}
     }
     return dirty;

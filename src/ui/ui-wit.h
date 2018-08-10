@@ -73,6 +73,7 @@ typedef enum enumOptions
 	OPT_IGNORE_FST,
 	OPT_IGNORE_SETUP,
 	OPT_LINKS,
+	OPT_USER_BIN,
 	OPT_NULL,
 	OPT_PSEL,
 	OPT_RAW,
@@ -159,7 +160,7 @@ typedef enum enumOptions
 	OPT_FILE_LIMIT,
 	OPT_PATCH_FILE,
 
-	OPT__N_SPECIFIC, // == 103 
+	OPT__N_SPECIFIC, // == 104 
 
 	//----- global options -----
 
@@ -193,7 +194,7 @@ typedef enum enumOptions
 	OPT_GCZ_ZIP,
 	OPT_GCZ_BLOCK,
 
-	OPT__N_TOTAL // == 132
+	OPT__N_TOTAL // == 133
 
 } enumOptions;
 
@@ -225,6 +226,7 @@ typedef enum enumOptions
 //	OB_IGNORE_FST		= 1llu << OPT_IGNORE_FST,
 //	OB_IGNORE_SETUP		= 1llu << OPT_IGNORE_SETUP,
 //	OB_LINKS		= 1llu << OPT_LINKS,
+//	OB_USER_BIN		= 1llu << OPT_USER_BIN,
 //	OB_NULL			= 1llu << OPT_NULL,
 //	OB_PSEL			= 1llu << OPT_PSEL,
 //	OB_RAW			= 1llu << OPT_RAW,
@@ -317,7 +319,8 @@ typedef enum enumOptions
 //
 //	OB_GRP_FST_OPTIONS	= OB_IGNORE_FST
 //				| OB_IGNORE_SETUP
-//				| OB_LINKS,
+//				| OB_LINKS
+//				| OB_USER_BIN,
 //
 //	OB_GRP_FST_SELECT	= OB_PMODE
 //				| OB_FLAT
@@ -810,6 +813,7 @@ typedef enum enumGetOpt
 	GO_IGNORE_FST,
 	GO_IGNORE_SETUP,
 	GO_LINKS,
+	GO_USER_BIN,
 	GO_PSEL,
 	GO_RAW,
 	GO_PMODE,

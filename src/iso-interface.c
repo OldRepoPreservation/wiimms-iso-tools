@@ -1617,6 +1617,7 @@ int RenameISOHeader ( void * data, ccp fname,
 bool allow_fst		= false;  // FST diabled by default
 bool ignore_setup	= false;  // ignore file 'setup.txt' while composing
 bool opt_links		= false;  // find linked files and create hard links
+bool opt_user_bin	= false;  // enable management of "sys/user.bin"
 
 wd_select_t part_selector = {0};
 
@@ -3784,7 +3785,7 @@ u32 ScanPartFST
     //----- generate file table ('fst.bin' & 'fst+.bin')
 
     *sd.path_part = 0;
- #if SUPPORT_FST_PLUS
+ #if SUPPORT_FST_PLUS > 1
     const u32 fst_plus_fsize = GetFileSize(sd.path,"sys/fst+.bin",0,0,false);
     const u32 fst_plus_size = fst_plus_fsize ? 4 + ALIGN32(fst_plus_fsize,4) : 0;
  #else
@@ -3797,7 +3798,7 @@ u32 ScanPartFST
 			+ sd.name_pool_size + fst_plus_size;
     part->ftab = CALLOC(part->ftab_size,1);
 
- #if SUPPORT_FST_PLUS
+ #if SUPPORT_FST_PLUS > 1
     if ( fst_plus_size > 0 )
     {
 	u8 *dest = part->ftab + part->ftab_size - fst_plus_size;
@@ -3817,7 +3818,7 @@ u32 ScanPartFST
     {
 	boot->fst_off4  = htonl(cur_offset4);
 	boot->fst_size4 = boot->max_fst_size4 = htonl(part->ftab_size>>2);
- #if SUPPORT_FST_PLUS
+ #if SUPPORT_FST_PLUS > 1
 	if (fst_plus_size)
 	    boot->max_fst_size4 = htonl(part->ftab_size+0x100>>2);
  #endif
@@ -4124,6 +4125,40 @@ u64 GenPartFST
     imi->data_alloced = true;
 
     cur_offset4 = ( WII_APL_OFF >> 2 ) + app_fsize4;
+
+
+    //----- user.bin
+
+ #if SUPPORT_USER_BIN > 1
+
+    fpath = PathCatPP(pathbuf,sizeof(pathbuf),path,"sys/user.bin");
+    const u32 ubin_fsize = GetFileSize(fpath,0,0,&part->max_fatt,true);
+    if ( ubin_fsize > 0 )
+    {
+	cur_offset4 = ALIGN32(cur_offset4,WIIUSER_DATA_ALIGN>>2);
+
+	wiiuser_header_t wuh;
+	memset(&wuh,0,sizeof(wuh));
+	memcpy(wuh.magic,WIIUSER_MAGIC,sizeof(wuh.magic));
+	wuh.version = htonl(WIIUSER_VERSION);
+	wuh.size = htonl(ubin_fsize);
+
+	imi = InsertIM(&part->im,IMT_DATA,(u64)cur_offset4<<2,sizeof(wuh));
+	imi->part = part;
+	StringCopyS(imi->info,sizeof(imi->info),"user.head");
+	imi->data = MEMDUP(&wuh,sizeof(wuh));
+	imi->data_alloced = true;
+	cur_offset4 += sizeof(wuh) + 3 >> 2;
+
+	imi = InsertIM(&part->im,IMT_FILE,(u64)cur_offset4<<2,(u64)ubin_fsize);
+	imi->part = part;
+	StringCopyS(imi->info,sizeof(imi->info),"user.bin");
+	imi->data = STRDUP(fpath);
+	imi->data_alloced = true;
+	cur_offset4 += ALIGN32(ubin_fsize,WIIUSER_DATA_ALIGN) >> 2;
+    }
+
+ #endif
 
 
     //----- main.dol

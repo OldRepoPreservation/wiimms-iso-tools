@@ -1,8 +1,8 @@
 wit v@@VERSION@@ r@@REV-NEXT@@ - @@@@-@@-@@
 
- - New option: --dsync: The option enables the usage of flag O_DSYNC when
-   opening a partition at a hard drive. With activated flag, writing an image
-   is some percent slower, but the progress counters are exact again.
+ - Options --wiimmfi & --domain: Domain 'sake.gamespy.com' is replaced too,
+   but only if the new domain is not longer than 11 characters. This is a
+   special support for 'Super Smash Bros. Brawl'.
 
 ~
 ~Known bugs:
